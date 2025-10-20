@@ -15,6 +15,34 @@ export function QuotationItems() {
   const updateItem = useQuoteStore((state) => state.updateItem);
   const removeItem = useQuoteStore((state) => state.removeItem);
 
+  // Helper function to check if unit is area-based
+  const isAreaUnit = (unit: string | undefined) => {
+    if (!unit) return false;
+    const areaUnits = ['sqft', 'sq.ft', 'sq ft', 'sq.m', 'sqm', 'sq.yard', 'sqyard'];
+    return areaUnits.some(au => unit.toLowerCase().includes(au.toLowerCase()));
+  };
+
+  const handleDimensionChange = (itemId: string, field: 'length' | 'width', value: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const dimensions = item.dimensions || {};
+    const newDimensions = {
+      ...dimensions,
+      [field]: parseFloat(value) || 0,
+    };
+
+    // Auto-calculate quantity if both length and width are present
+    const length = newDimensions.length || 0;
+    const width = newDimensions.width || 0;
+    const calculatedQuantity = length * width;
+
+    updateItem(itemId, {
+      dimensions: newDimensions,
+      quantity: calculatedQuantity > 0 ? calculatedQuantity : item.quantity,
+    });
+  };
+
   // Group items by category
   const groupedItems = items.reduce((acc, item) => {
     const categoryName = item.product?.category?.name || 'Uncategorized';
@@ -121,7 +149,43 @@ export function QuotationItems() {
                           </div>
 
                           {/* Input Fields */}
-                          <div className="grid grid-cols-4 gap-3">
+                          <div className="grid grid-cols-6 gap-3">
+                            {isAreaUnit(item.product?.unit) && (
+                              <>
+                                <div>
+                                  <label className="text-xs font-medium text-gray-600 block mb-1">
+                                    Length (ft)
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={item.dimensions?.length || ''}
+                                    onChange={(e) =>
+                                      handleDimensionChange(item.id, 'length', e.target.value)
+                                    }
+                                    placeholder="0"
+                                    className="text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-medium text-gray-600 block mb-1">
+                                    Width (ft)
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={item.dimensions?.width || ''}
+                                    onChange={(e) =>
+                                      handleDimensionChange(item.id, 'width', e.target.value)
+                                    }
+                                    placeholder="0"
+                                    className="text-sm"
+                                  />
+                                </div>
+                              </>
+                            )}
                             <div>
                               <label className="text-xs font-medium text-gray-600 block mb-1">
                                 Quantity
@@ -137,6 +201,8 @@ export function QuotationItems() {
                                   })
                                 }
                                 className="text-sm"
+                                readOnly={isAreaUnit(item.product?.unit)}
+                                title={isAreaUnit(item.product?.unit) ? 'Auto-calculated from Length × Width' : ''}
                               />
                             </div>
 

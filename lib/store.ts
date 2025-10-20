@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DiscountMode, Product, Client, PolicyType, Category } from '@prisma/client';
+import { DiscountMode, Product, Client, PolicyType, Category, PDFTemplate } from './types';
 
 export interface ProductWithCategory extends Product {
   category: Category;
@@ -30,6 +30,8 @@ interface QuoteStore {
   title: string;
   clientId?: string;
   client?: Client;
+  templateId?: string;
+  template?: PDFTemplate;
   discountMode: DiscountMode;
   overallDiscount: number;
   taxRate: number;
@@ -43,6 +45,7 @@ interface QuoteStore {
   // Actions
   setTitle: (title: string) => void;
   setClient: (clientId?: string, client?: Client) => void;
+  setTemplate: (templateId?: string, template?: PDFTemplate) => void;
   setDiscountMode: (mode: DiscountMode) => void;
   setOverallDiscount: (discount: number) => void;
   setTaxRate: (rate: number) => void;
@@ -143,9 +146,11 @@ export const useQuoteStore = create<QuoteStore>((set) => ({
 
   // Actions
   setTitle: (title) => set({ title }),
-  
+
   setClient: (clientId, client) => set({ clientId, client }),
-  
+
+  setTemplate: (templateId, template) => set({ templateId, template }),
+
   setDiscountMode: (mode) => set({ discountMode: mode }),
   
   setOverallDiscount: (discount) => set({ overallDiscount: discount }),
@@ -214,6 +219,8 @@ export const useQuoteStore = create<QuoteStore>((set) => ({
       title: '',
       clientId: undefined,
       client: undefined,
+      templateId: undefined,
+      template: undefined,
       discountMode: 'LINE_ITEM',
       overallDiscount: 0,
       taxRate: 18,
@@ -227,6 +234,8 @@ export const useQuoteStore = create<QuoteStore>((set) => ({
       title: quote.title,
       clientId: quote.clientId,
       client: quote.client,
+      templateId: quote.templateId,
+      template: quote.template,
       discountMode: quote.discountMode,
       overallDiscount: quote.overallDiscount,
       taxRate: quote.taxRate,

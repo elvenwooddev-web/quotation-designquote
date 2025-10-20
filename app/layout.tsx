@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
+import { ConditionalHeader } from "@/components/Navigation/ConditionalHeader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IntelliQuote - Quote Builder",
+  title: "DesignQuote - Quote Builder",
   description: "Professional quotation builder for creating detailed quotes with ease",
 };
 
@@ -27,7 +29,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          <ConditionalHeader />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

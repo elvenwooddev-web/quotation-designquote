@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useQuoteStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth-context';
+import { hasPermission } from '@/lib/permissions';
 import { Category, Product } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CategoryDialog } from './CategoryDialog';
@@ -23,6 +25,7 @@ export function ProductCatalog() {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [showProductDialog, setShowProductDialog] = useState(false);
   const addItem = useQuoteStore((state) => state.addItem);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchCategories();
@@ -53,9 +56,17 @@ export function ProductCatalog() {
 
       const response = await fetch(`/api/products?${params}`);
       const data = await response.json();
-      setProducts(data);
+
+      // Validate response is an array to prevent "map is not a function" errors
+      if (response.ok && Array.isArray(data)) {
+        setProducts(data);
+      } else {
+        console.error('Invalid products response:', data);
+        setProducts([]); // Fallback to empty array
+      }
     } catch (error) {
       console.error('Failed to fetch products:', error);
+      setProducts([]); // Fallback to empty array on error
     }
   };
 
@@ -70,6 +81,26 @@ export function ProductCatalog() {
 
   const handleProductCreated = (product: ProductWithCategory) => {
     fetchProducts();
+  };
+
+  const handleSaveProduct = async (productData: Partial<Product>) => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save product');
+      }
+
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error saving product:', error);
+      throw error;
+    }
   };
 
   return (
@@ -106,15 +137,17 @@ export function ProductCatalog() {
                 {category.name}
               </button>
             ))}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => setShowCategoryDialog(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Category
-            </Button>
+            {user && hasPermission(user.role, 'categories', 'canCreate') && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                onClick={() => setShowCategoryDialog(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Category
+              </Button>
+            )}
           </div>
         </div>
 
@@ -165,15 +198,17 @@ export function ProductCatalog() {
             </div>
           )}
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full"
-            onClick={() => setShowProductDialog(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Item
-          </Button>
+          {user && hasPermission(user.role, 'products', 'canCreate') && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={() => setShowProductDialog(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Item
+            </Button>
+          )}
         </div>
       </div>
 
@@ -187,8 +222,9 @@ export function ProductCatalog() {
       <ProductDialog
         open={showProductDialog}
         onOpenChange={setShowProductDialog}
-        onProductCreated={handleProductCreated}
+        product={null}
         categories={categories}
+        onSave={handleSaveProduct}
       />
     </>
   );

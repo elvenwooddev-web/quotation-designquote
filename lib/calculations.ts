@@ -1,4 +1,4 @@
-import { DiscountMode } from '@prisma/client';
+import { DiscountMode } from './types';
 import { QuoteItemWithProduct, QuoteCalculations, CategoryContribution } from './types';
 
 export function calculateLineTotal(

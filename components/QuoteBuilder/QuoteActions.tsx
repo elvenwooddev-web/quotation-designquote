@@ -1,18 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, Send, FileDown } from 'lucide-react';
+import { Save, Send, FileDown, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuoteStore } from '@/lib/store';
 import { calculateQuoteTotals, calculateLineTotal } from '@/lib/calculations';
+import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 
 export function QuoteActions() {
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const title = useQuoteStore((state) => state.title);
   const clientId = useQuoteStore((state) => state.clientId);
+  const templateId = useQuoteStore((state) => state.templateId);
   const discountMode = useQuoteStore((state) => state.discountMode);
   const overallDiscount = useQuoteStore((state) => state.overallDiscount);
   const taxRate = useQuoteStore((state) => state.taxRate);
@@ -39,6 +42,7 @@ export function QuoteActions() {
         body: JSON.stringify({
           title,
           clientId,
+          templateId,
           discountMode,
           overallDiscount,
           taxRate,
@@ -76,6 +80,14 @@ export function QuoteActions() {
     }
   };
 
+  const handlePreview = () => {
+    if (!savedQuoteId) {
+      alert('Please save the quote first before previewing');
+      return;
+    }
+    setShowPreview(true);
+  };
+
   const handleExportPDF = async () => {
     if (!savedQuoteId) {
       alert('Please save the quote first before exporting to PDF');
@@ -109,31 +121,51 @@ export function QuoteActions() {
   };
 
   return (
-    <div className="flex gap-3">
-      <Button
-        onClick={handleSaveDraft}
-        disabled={isSaving}
-        variant="outline"
-        className="flex-1"
-      >
-        <Save className="h-4 w-4 mr-2" />
-        {isSaving ? 'Saving...' : 'Save Draft'}
-      </Button>
+    <>
+      <div className="flex gap-3">
+        <Button
+          onClick={handleSaveDraft}
+          disabled={isSaving}
+          variant="outline"
+          className="flex-1"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {isSaving ? 'Saving...' : 'Save Draft'}
+        </Button>
 
-      <Button
-        onClick={handleExportPDF}
-        disabled={isExporting || !savedQuoteId}
-        className="flex-1"
-      >
-        <FileDown className="h-4 w-4 mr-2" />
-        {isExporting ? 'Exporting...' : 'Export PDF'}
-      </Button>
+        <Button
+          onClick={handlePreview}
+          disabled={!savedQuoteId}
+          variant="outline"
+          className="flex-1"
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          Preview
+        </Button>
 
-      <Button variant="secondary" className="flex-1" disabled>
-        <Send className="h-4 w-4 mr-2" />
-        Send Quote
-      </Button>
-    </div>
+        <Button
+          onClick={handleExportPDF}
+          disabled={isExporting || !savedQuoteId}
+          className="flex-1"
+        >
+          <FileDown className="h-4 w-4 mr-2" />
+          {isExporting ? 'Exporting...' : 'Export PDF'}
+        </Button>
+
+        <Button variant="secondary" className="flex-1" disabled>
+          <Send className="h-4 w-4 mr-2" />
+          Send Quote
+        </Button>
+      </div>
+
+      {/* PDF Preview Modal */}
+      <PDFPreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        quoteId={savedQuoteId || undefined}
+        title="Quote Preview"
+      />
+    </>
   );
 }
 

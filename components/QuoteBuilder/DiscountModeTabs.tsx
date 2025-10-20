@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuoteStore } from '@/lib/store';
-import { DiscountMode } from '@prisma/client';
+import { DiscountMode } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const modes = [

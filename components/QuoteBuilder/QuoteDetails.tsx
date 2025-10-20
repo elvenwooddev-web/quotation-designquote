@@ -7,21 +7,45 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuoteStore } from '@/lib/store';
-import { Client } from '@prisma/client';
+import { Client, PDFTemplate } from '@/lib/types';
 import { ClientDialog } from './ClientDialog';
+import { TemplateDisplay } from './TemplateDisplay';
+import { TemplateSelectorDialog } from './TemplateSelectorDialog';
+import { getDefaultTemplate } from '@/lib/get-default-template';
 
 export function QuoteDetails() {
   const [clients, setClients] = useState<Client[]>([]);
   const [showClientDialog, setShowClientDialog] = useState(false);
-  
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+
   const title = useQuoteStore((state) => state.title);
   const clientId = useQuoteStore((state) => state.clientId);
+  const templateId = useQuoteStore((state) => state.templateId);
+  const template = useQuoteStore((state) => state.template);
   const setTitle = useQuoteStore((state) => state.setTitle);
   const setClient = useQuoteStore((state) => state.setClient);
+  const setTemplate = useQuoteStore((state) => state.setTemplate);
 
   useEffect(() => {
     fetchClients();
+    loadDefaultTemplate();
   }, []);
+
+  const loadDefaultTemplate = async () => {
+    // Only load default template if no template is already set
+    if (!templateId && !template) {
+      setLoadingTemplate(true);
+      try {
+        const defaultTemplate = await getDefaultTemplate();
+        setTemplate(defaultTemplate.id, defaultTemplate);
+      } catch (error) {
+        console.error('Failed to load default template:', error);
+      } finally {
+        setLoadingTemplate(false);
+      }
+    }
+  };
 
   const fetchClients = async () => {
     try {
@@ -46,6 +70,10 @@ export function QuoteDetails() {
     setClients([...clients, newClient]);
     setClient(newClient.id, newClient);
     setShowClientDialog(false);
+  };
+
+  const handleTemplateSelected = (selectedTemplate: PDFTemplate) => {
+    setTemplate(selectedTemplate.id, selectedTemplate);
   };
 
   return (
@@ -92,6 +120,17 @@ export function QuoteDetails() {
               </Select>
             </div>
           </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">
+              PDF Template
+            </label>
+            <TemplateDisplay
+              template={template}
+              onChangeTemplate={() => setShowTemplateDialog(true)}
+              loading={loadingTemplate}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -99,6 +138,13 @@ export function QuoteDetails() {
         open={showClientDialog}
         onOpenChange={setShowClientDialog}
         onClientCreated={handleClientCreated}
+      />
+
+      <TemplateSelectorDialog
+        open={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        onSelectTemplate={handleTemplateSelected}
+        currentTemplateId={templateId}
       />
     </>
   );

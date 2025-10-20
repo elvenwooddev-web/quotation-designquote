@@ -62,7 +62,19 @@ export function FileUpload({
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        // Provide helpful error messages based on error type
+        if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('bucket')) {
+          throw new Error('Storage bucket "product-images" not found. Please create it in Supabase Dashboard > Storage. See setup-storage.md for instructions.');
+        }
+        if (uploadError.message?.includes('row-level security') || uploadError.message?.includes('policy')) {
+          throw new Error('Storage upload blocked by security policy. Please run the SQL script in fix-storage-policies.sql to configure bucket permissions. See setup-storage.md for details.');
+        }
+        if (uploadError.message?.includes('JWT') || uploadError.message?.includes('auth')) {
+          throw new Error('Authentication required for upload. Please ensure you are logged in or configure public upload policies.');
+        }
+        throw uploadError;
+      }
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage

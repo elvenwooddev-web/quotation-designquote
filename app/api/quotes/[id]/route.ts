@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { supabase } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
@@ -7,35 +7,66 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
-    const quote = await prisma.quote.findUnique({
-      where: { id },
-      include: {
-        client: true,
-        items: {
-          include: {
-            product: {
-              include: {
-                category: true,
-              },
-            },
-          },
-          orderBy: { order: 'asc' },
-        },
-        policies: {
-          orderBy: { order: 'asc' },
-        },
-      },
-    });
 
-    if (!quote) {
-      return NextResponse.json(
-        { error: 'Quote not found' },
-        { status: 404 }
-      );
+    const { data: quote, error } = await supabase
+      .from('quotes')
+      .select(`
+        *,
+        client:clients(*),
+        template:pdf_templates(*),
+        items:quote_items(
+          *,
+          product:products(
+            *,
+            category:categories(*)
+          )
+        ),
+        policies:policy_clauses(*)
+      `)
+      .eq('id', id)
+      .order('order', { foreignTable: 'quote_items', ascending: true })
+      .order('order', { foreignTable: 'policy_clauses', ascending: true })
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') { // Supabase specific error code for no rows found
+        return NextResponse.json(
+          { error: 'Quote not found' },
+          { status: 404 }
+        );
+      }
+      throw error;
     }
 
-    return NextResponse.json(quote);
+    // Map database columns to frontend format
+    const mappedQuote = {
+      ...quote,
+      quoteNumber: quote.quotenumber,
+      clientId: quote.clientid,
+      templateId: quote.templateid,
+      discountMode: quote.discountmode,
+      overallDiscount: quote.overalldiscount,
+      taxRate: quote.taxrate,
+      grandTotal: quote.grandtotal,
+      createdAt: quote.createdat,
+      updatedAt: quote.updatedat,
+      template: quote.template ? {
+        id: quote.template.id,
+        name: quote.template.name,
+        description: quote.template.description,
+        category: quote.template.category,
+        isDefault: quote.template.isdefault,
+        isPublic: quote.template.ispublic,
+        templateJson: quote.template.template_json,
+        thumbnail: quote.template.thumbnail,
+        createdBy: quote.template.createdby,
+        createdAt: quote.template.createdat,
+        updatedAt: quote.template.updatedat,
+        version: quote.template.version,
+      } : null,
+    };
+
+    return NextResponse.json(mappedQuote);
   } catch (error) {
     console.error('Error fetching quote:', error);
     return NextResponse.json(
@@ -52,27 +83,63 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status } = body;
+    const { status, templateId } = body;
 
-    const quote = await prisma.quote.update({
-      where: { id },
-      data: { status },
-      include: {
-        client: true,
-        items: {
-          include: {
-            product: {
-              include: {
-                category: true,
-              },
-            },
-          },
-        },
-        policies: true,
-      },
-    });
+    // Build update object dynamically
+    const updateData: any = {};
+    if (status !== undefined) updateData.status = status;
+    if (templateId !== undefined) updateData.templateid = templateId;
 
-    return NextResponse.json(quote);
+    const { data: quote, error } = await supabase
+      .from('quotes')
+      .update(updateData)
+      .eq('id', id)
+      .select(`
+        *,
+        client:clients(*),
+        template:pdf_templates(*),
+        items:quote_items(
+          *,
+          product:products(
+            *,
+            category:categories(*)
+          )
+        ),
+        policies:policy_clauses(*)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    // Map database columns to frontend format
+    const mappedQuote = {
+      ...quote,
+      quoteNumber: quote.quotenumber,
+      clientId: quote.clientid,
+      templateId: quote.templateid,
+      discountMode: quote.discountmode,
+      overallDiscount: quote.overalldiscount,
+      taxRate: quote.taxrate,
+      grandTotal: quote.grandtotal,
+      createdAt: quote.createdat,
+      updatedAt: quote.updatedat,
+      template: quote.template ? {
+        id: quote.template.id,
+        name: quote.template.name,
+        description: quote.template.description,
+        category: quote.template.category,
+        isDefault: quote.template.isdefault,
+        isPublic: quote.template.ispublic,
+        templateJson: quote.template.template_json,
+        thumbnail: quote.template.thumbnail,
+        createdBy: quote.template.createdby,
+        createdAt: quote.template.createdat,
+        updatedAt: quote.template.updatedat,
+        version: quote.template.version,
+      } : null,
+    };
+
+    return NextResponse.json(mappedQuote);
   } catch (error) {
     console.error('Error updating quote:', error);
     return NextResponse.json(
@@ -89,9 +156,12 @@ export async function DELETE(
   try {
     const { id } = await params;
     
-    await prisma.quote.delete({
-      where: { id },
-    });
+    const { error } = await supabase
+      .from('quotes')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {
