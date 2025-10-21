@@ -27,6 +27,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30days');
 
@@ -36,7 +37,14 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      // Only show full page loading on initial load
+      if (dashboardData === null) {
+        setLoading(true);
+      } else {
+        // Show subtle loading for filter changes
+        setIsRefreshing(true);
+      }
+
       const params = new URLSearchParams();
       if (user?.role) params.append('role', user.role);
       if (user?.id) params.append('userId', user.id);
@@ -49,11 +57,13 @@ export default function Dashboard() {
 
       const data = await response.json();
       setDashboardData(data);
+      setError(null);
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
       setError(err.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -138,7 +148,7 @@ export default function Dashboard() {
       {/* Dashboard Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
           <MetricCard
             title="Total Revenue"
             value={dashboardData.totalRevenue}
@@ -161,11 +171,12 @@ export default function Dashboard() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
           <div className="lg:col-span-2">
-            <RevenueChart 
-              data={dashboardData.revenueOverTime} 
+            <RevenueChart
+              data={dashboardData.revenueOverTime}
               growth={dashboardData.salesGrowth}
+              period={timePeriod}
             />
           </div>
           <div className="lg:col-span-1">
@@ -174,8 +185,8 @@ export default function Dashboard() {
         </div>
 
         {/* Top Deals Table */}
-        <div className="grid grid-cols-1">
-          <TopDealsTable data={dashboardData.topDeals} />
+        <div className={`grid grid-cols-1 transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+          <TopDealsTable data={dashboardData.topDeals} period={timePeriod} />
         </div>
       </div>
     </div>

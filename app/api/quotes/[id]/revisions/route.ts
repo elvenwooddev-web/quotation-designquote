@@ -7,20 +7,20 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     const { data: revisions, error } = await supabase
-      .from('client_revisions')
+      .from('quote_revisions')
       .select('*')
-      .eq('client_id', id)
-      .order('created_at', { ascending: false });
+      .eq('quoteid', id)
+      .order('exported_at', { ascending: false });
 
     if (error) throw error;
 
-    return NextResponse.json(revisions);
+    return NextResponse.json(revisions || []);
   } catch (error) {
-    console.error('Error fetching client revisions:', error);
+    console.error('Error fetching quote revisions:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch client revisions' },
+      { error: 'Failed to fetch quote revisions' },
       { status: 500 }
     );
   }

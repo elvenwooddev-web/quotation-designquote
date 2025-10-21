@@ -10,10 +10,11 @@ interface TopDeal {
 
 interface TopDealsTableProps {
   data: TopDeal[];
+  period?: string;
   className?: string;
 }
 
-export function TopDealsTable({ data, className = '' }: TopDealsTableProps) {
+export function TopDealsTable({ data, period = '30days', className = '' }: TopDealsTableProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
@@ -26,11 +27,22 @@ export function TopDealsTable({ data, className = '' }: TopDealsTableProps) {
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 
+  const getPeriodLabel = (period: string) => {
+    switch (period) {
+      case '7days': return 'Last 7 days';
+      case '30days': return 'Last 30 days';
+      case '90days': return 'Last 90 days';
+      case '12months': return 'Last 12 months';
+      case 'year': return 'This Year';
+      default: return 'Last 30 days';
+    }
+  };
+
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Top Deals</h3>
-        <span className="text-sm text-gray-600">Last 30 days</span>
+        <span className="text-sm text-gray-600">{getPeriodLabel(period)}</span>
       </div>
       
       {data.length === 0 ? (

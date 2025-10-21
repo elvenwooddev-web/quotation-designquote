@@ -27,7 +27,7 @@ export function TermsPreview() {
           </h4>
           <ul className="space-y-2 text-sm text-gray-700">
             {activeTerms.map((policy, index) => (
-              <li key={`${policy.type}-${policy.order}`} className="flex gap-2">
+              <li key={`${policy.type}-${index}`} className="flex gap-2">
                 <span className="flex-shrink-0">•</span>
                 <div>
                   <span className="font-medium">{policy.title}:</span>{' '}

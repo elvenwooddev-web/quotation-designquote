@@ -10,9 +10,10 @@ import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 export function QuoteActions() {
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const quoteId = useQuoteStore((state) => state.quoteId);
   const title = useQuoteStore((state) => state.title);
   const clientId = useQuoteStore((state) => state.clientId);
   const templateId = useQuoteStore((state) => state.templateId);
@@ -21,6 +22,23 @@ export function QuoteActions() {
   const taxRate = useQuoteStore((state) => state.taxRate);
   const items = useQuoteStore((state) => state.items);
   const policies = useQuoteStore((state) => state.policies);
+
+  // Track the current quote ID (either from store or newly created)
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(quoteId || null);
+
+  // Update savedQuoteId when quoteId changes from store
+  React.useEffect(() => {
+    if (quoteId) {
+      setSavedQuoteId(quoteId);
+    }
+  }, [quoteId]);
+
+  // Track changes to quote data - if editing existing quote, mark as having unsaved changes
+  React.useEffect(() => {
+    if (savedQuoteId) {
+      setHasUnsavedChanges(true);
+    }
+  }, [title, clientId, templateId, discountMode, overallDiscount, taxRate, items, policies]);
 
   const handleSaveDraft = async () => {
     if (!title.trim()) {
@@ -36,41 +54,48 @@ export function QuoteActions() {
     setIsSaving(true);
 
     try {
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
+      const quoteData = {
+        title,
+        clientId,
+        templateId,
+        discountMode,
+        overallDiscount,
+        taxRate,
+        items: items.map((item) => ({
+          productId: item.productId,
+          description: item.description,
+          quantity: item.quantity,
+          rate: item.rate,
+          discount: item.discount,
+          dimensions: item.dimensions,
+        })),
+        policies: policies.map((p) => ({
+          type: p.type,
+          title: p.title,
+          description: p.description,
+          isActive: p.isActive,
+        })),
+      };
+
+      // Determine if creating new or updating existing
+      const isUpdate = !!savedQuoteId;
+      const url = isUpdate ? `/api/quotes/${savedQuoteId}` : '/api/quotes';
+      const method = isUpdate ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          clientId,
-          templateId,
-          discountMode,
-          overallDiscount,
-          taxRate,
-          items: items.map((item) => ({
-            productId: item.productId,
-            description: item.description,
-            quantity: item.quantity,
-            rate: item.rate,
-            discount: item.discount,
-            dimensions: item.dimensions,
-          })),
-          policies: policies
-            .filter((p) => p.isActive)
-            .map((p) => ({
-              type: p.type,
-              title: p.title,
-              description: p.description,
-              isActive: p.isActive,
-            })),
-        }),
+        body: JSON.stringify(quoteData),
       });
 
       if (response.ok) {
         const quote = await response.json();
         setSavedQuoteId(quote.id);
-        alert('Quote saved successfully!');
+        setHasUnsavedChanges(false); // Clear unsaved changes flag after successful save
+        alert(isUpdate ? 'Quote updated successfully! Revision history has been recorded.' : 'Quote saved successfully!');
       } else {
-        alert('Failed to save quote');
+        const error = await response.json();
+        alert(error.error || 'Failed to save quote');
       }
     } catch (error) {
       console.error('Failed to save quote:', error);
@@ -85,12 +110,20 @@ export function QuoteActions() {
       alert('Please save the quote first before previewing');
       return;
     }
+    if (hasUnsavedChanges) {
+      alert('Please update the quote first to save your changes before previewing');
+      return;
+    }
     setShowPreview(true);
   };
 
   const handleExportPDF = async () => {
     if (!savedQuoteId) {
       alert('Please save the quote first before exporting to PDF');
+      return;
+    }
+    if (hasUnsavedChanges) {
+      alert('Please update the quote first to save your changes before exporting to PDF');
       return;
     }
 
@@ -130,14 +163,17 @@ export function QuoteActions() {
           className="flex-1"
         >
           <Save className="h-4 w-4 mr-2" />
-          {isSaving ? 'Saving...' : 'Save Draft'}
+          {isSaving
+            ? (savedQuoteId ? 'Updating...' : 'Saving...')
+            : (savedQuoteId ? 'Update Quote' : 'Save Draft')}
         </Button>
 
         <Button
           onClick={handlePreview}
-          disabled={!savedQuoteId}
+          disabled={!savedQuoteId || hasUnsavedChanges}
           variant="outline"
           className="flex-1"
+          title={hasUnsavedChanges ? 'Update quote first to preview' : ''}
         >
           <Eye className="h-4 w-4 mr-2" />
           Preview
@@ -145,8 +181,9 @@ export function QuoteActions() {
 
         <Button
           onClick={handleExportPDF}
-          disabled={isExporting || !savedQuoteId}
+          disabled={isExporting || !savedQuoteId || hasUnsavedChanges}
           className="flex-1"
+          title={hasUnsavedChanges ? 'Update quote first to export PDF' : ''}
         >
           <FileDown className="h-4 w-4 mr-2" />
           {isExporting ? 'Exporting...' : 'Export PDF'}

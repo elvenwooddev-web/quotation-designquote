@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
 
-// Mock data generator for testing
+// Force use of mock data for testing
 function generateMockData(period: string = '30days') {
   const now = new Date();
   const mockQuotes = [];
@@ -55,46 +54,10 @@ function generateMockData(period: string = '30days') {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const userRole = searchParams.get('role') || 'Admin';
-    const userId = searchParams.get('userId');
     const period = searchParams.get('period') || '30days';
 
-    // Get all quotes with client information
-    let quotesQuery = supabase
-      .from('quotes')
-      .select(`
-        *,
-        client:clients(*)
-      `)
-      .order('createdat', { ascending: false });
-
-    // Apply role-based filtering
-    if (userRole === 'Client' && userId) {
-      quotesQuery = quotesQuery.eq('clientid', userId);
-    }
-
-    const { data: quotes, error: quotesError } = await quotesQuery;
-
-    if (quotesError) {
-      console.error('Quotes query error:', quotesError);
-    }
-
-    console.log('Quotes fetched:', quotes?.length || 0);
-
-    // Use real data if available, otherwise fall back to mock data
-    const dataToUse = (quotes && quotes.length > 0) ? quotes : generateMockData(period);
-
-    if (!dataToUse || dataToUse.length === 0) {
-      return NextResponse.json({
-        totalRevenue: 0,
-        salesGrowth: 0,
-        avgDealSize: 0,
-        conversionRate: 0,
-        revenueOverTime: [],
-        leadSourceBreakdown: [],
-        topDeals: []
-      });
-    }
+    // Always use mock data for testing
+    const dataToUse = generateMockData(period);
 
     // Calculate metrics
     const acceptedQuotes = dataToUse.filter(q => q.status === 'ACCEPTED');
@@ -127,80 +90,25 @@ export async function GET(request: NextRequest) {
     const avgDealSize = acceptedQuotes.length > 0 ? totalRevenue / acceptedQuotes.length : 0;
     const conversionRate = dataToUse.length > 0 ? (acceptedQuotes.length / dataToUse.length) * 100 : 0;
 
-    // Revenue over time - dynamic based on period
+    // Revenue over time (last 6 months)
     const revenueOverTime = [];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const currentDate = new Date();
 
-    // Determine data points based on period
-    let dataPoints = 6;
-    let granularity: 'day' | 'week' | 'month' = 'month';
+    for (let i = 5; i >= 0; i--) {
+      const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthRevenue = acceptedQuotes
+        .filter(q => {
+          const quoteDate = new Date(q.createdat);
+          return quoteDate.getMonth() === targetDate.getMonth() &&
+                 quoteDate.getFullYear() === targetDate.getFullYear();
+        })
+        .reduce((sum, q) => sum + (q.grandTotal || 0), 0);
 
-    switch (period) {
-      case '7days':
-        dataPoints = 7;
-        granularity = 'day';
-        break;
-      case '30days':
-        dataPoints = 30;
-        granularity = 'day';
-        break;
-      case '90days':
-        dataPoints = 90;
-        granularity = 'day';
-        break;
-      case '12months':
-      case 'year':
-        dataPoints = 12;
-        granularity = 'month';
-        break;
-      default:
-        dataPoints = 6;
-        granularity = 'month';
-    }
-
-    // Generate data based on granularity
-    if (granularity === 'day') {
-      for (let i = dataPoints - 1; i >= 0; i--) {
-        const targetDate = new Date(currentDate);
-        targetDate.setDate(currentDate.getDate() - i);
-
-        const dayRevenue = acceptedQuotes
-          .filter(q => {
-            const quoteDate = new Date(q.createdat);
-            return quoteDate.toDateString() === targetDate.toDateString();
-          })
-          .reduce((sum, q) => sum + (q.grandTotal || 0), 0);
-
-        const label = dataPoints <= 7
-          ? `${days[targetDate.getDay()]} ${targetDate.getDate()}`
-          : `${targetDate.getDate()}`;
-
-        revenueOverTime.push({
-          month: label,
-          revenue: dayRevenue,
-          date: targetDate.toISOString().split('T')[0]
-        });
-      }
-    } else {
-      // Monthly granularity
-      for (let i = dataPoints - 1; i >= 0; i--) {
-        const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-        const monthRevenue = acceptedQuotes
-          .filter(q => {
-            const quoteDate = new Date(q.createdat);
-            return quoteDate.getMonth() === targetDate.getMonth() &&
-                   quoteDate.getFullYear() === targetDate.getFullYear();
-          })
-          .reduce((sum, q) => sum + (q.grandTotal || 0), 0);
-
-        revenueOverTime.push({
-          month: months[targetDate.getMonth()],
-          revenue: monthRevenue,
-          date: targetDate.toISOString().split('T')[0]
-        });
-      }
+      revenueOverTime.push({
+        month: months[targetDate.getMonth()],
+        revenue: monthRevenue
+      });
     }
 
     // Lead source breakdown
@@ -224,19 +132,32 @@ export async function GET(request: NextRequest) {
       }));
 
     return NextResponse.json({
+      period,
+      totalQuotes: dataToUse.length,
+      acceptedQuotes: acceptedQuotes.length,
       totalRevenue,
-      salesGrowth,
-      avgDealSize,
-      conversionRate,
+      salesGrowth: Math.round(salesGrowth * 10) / 10,
+      avgDealSize: Math.round(avgDealSize),
+      conversionRate: Math.round(conversionRate * 10) / 10,
       revenueOverTime,
       leadSourceBreakdown,
-      topDeals
+      topDeals,
+      debug: {
+        currentMonthRevenue,
+        previousMonthRevenue,
+        statusBreakdown: {
+          DRAFT: dataToUse.filter(q => q.status === 'DRAFT').length,
+          SENT: dataToUse.filter(q => q.status === 'SENT').length,
+          ACCEPTED: dataToUse.filter(q => q.status === 'ACCEPTED').length,
+          REJECTED: dataToUse.filter(q => q.status === 'REJECTED').length,
+        }
+      }
     });
 
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    console.error('Error in test endpoint:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
+      { error: 'Failed to generate test data' },
       { status: 500 }
     );
   }

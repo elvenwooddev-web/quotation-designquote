@@ -129,17 +129,63 @@ export async function GET(
       // If no default template in DB, generateQuotePDF will use the built-in default
     }
 
+    // Handle status and revision tracking
+    const currentVersion = quote.version || 1;
+    const currentStatus = quote.status;
+    let newStatus = currentStatus;
+    let newVersion = currentVersion;
+
+    // Auto-update status on first export (from DRAFT to SENT)
+    if (currentStatus === 'DRAFT') {
+      newStatus = 'SENT';
+      newVersion = 1; // First version when sending
+    } else if (currentStatus === 'SENT' || currentStatus === 'ACCEPTED') {
+      // Increment version for subsequent exports
+      newVersion = currentVersion + 1;
+    }
+
+    // Update quote with new status and version
+    if (newStatus !== currentStatus || newVersion !== currentVersion) {
+      await supabase
+        .from('quotes')
+        .update({
+          status: newStatus,
+          version: newVersion,
+          updatedat: new Date().toISOString(),
+        })
+        .eq('id', id);
+    }
+
+    // Create revision history entry
+    await supabase
+      .from('quote_revisions')
+      .insert({
+        quoteid: id,
+        version: newVersion,
+        status: newStatus,
+        exported_by: 'system', // TODO: Get from auth context
+        exported_at: new Date().toISOString(),
+        changes: {
+          previous_status: currentStatus,
+          new_status: newStatus,
+          previous_version: currentVersion,
+          new_version: newVersion,
+        },
+        notes: currentStatus === 'DRAFT' ? 'Initial quote export' : 'Quote re-exported',
+      });
+
     // Generate PDF with template
     const pdfBlob = await generateQuotePDF(mappedQuote, template);
 
     // Convert blob to buffer for Next.js response
     const buffer = Buffer.from(await pdfBlob.arrayBuffer());
 
-    // Return PDF as downloadable file
+    // Return PDF as downloadable file with version in filename
+    const filename = `quote-${quote.quotenumber || id}-v${newVersion}.pdf`;
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="quote-${quote.quotenumber || id}.pdf"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
   } catch (error) {

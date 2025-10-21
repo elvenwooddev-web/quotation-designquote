@@ -13,7 +13,7 @@ export async function GET(
       .select(`
         *,
         quotes:quotes(
-          id, title, quoteNumber, status, grandTotal, createdat
+          id, title, quotenumber, status, grandtotal, createdat
         )
       `)
       .eq('id', id)
@@ -29,7 +29,20 @@ export async function GET(
       throw error;
     }
 
-    return NextResponse.json(client);
+    // Map database columns to frontend format
+    const mappedClient = {
+      ...client,
+      quotes: (client.quotes || []).map((quote: any) => ({
+        id: quote.id,
+        title: quote.title,
+        quoteNumber: quote.quotenumber,
+        status: quote.status,
+        grandTotal: quote.grandtotal,
+        createdAt: quote.createdat,
+      })),
+    };
+
+    return NextResponse.json(mappedClient);
   } catch (error) {
     console.error('Error fetching client:', error);
     return NextResponse.json(
@@ -46,7 +59,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, email, phone, address } = body;
+    const { name, email, phone, address, source, expectedDealValue } = body;
 
     // Get the current client data for revision logging
     const { data: currentClient, error: fetchError } = await supabase
@@ -57,16 +70,28 @@ export async function PUT(
 
     if (fetchError) throw fetchError;
 
+    // Prepare update data
+    const updateData: any = {
+      name,
+      email,
+      phone,
+      address,
+      source: source || 'Other',
+      updatedat: new Date().toISOString(),
+    };
+
+    // Add expectedDealValue only if it's provided
+    if (expectedDealValue !== undefined && expectedDealValue !== null && expectedDealValue !== '') {
+      updateData.expecteddealvalue = Number(expectedDealValue);
+    } else {
+      // Explicitly set to null if empty string or null provided
+      updateData.expecteddealvalue = null;
+    }
+
     // Update the client
     const { data: updatedClient, error: updateError } = await supabase
       .from('clients')
-      .update({
-        name,
-        email,
-        phone,
-        address,
-        updatedat: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -81,6 +106,8 @@ export async function PUT(
         email: { from: currentClient.email, to: email },
         phone: { from: currentClient.phone, to: phone },
         address: { from: currentClient.address, to: address },
+        source: { from: currentClient.source, to: source },
+        expectedDealValue: { from: currentClient.expecteddealvalue, to: expectedDealValue },
       }
     };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Quote } from '@/lib/types';
 
 interface QuotationCardProps {
@@ -7,6 +8,8 @@ interface QuotationCardProps {
 }
 
 export function QuotationCard({ quote }: QuotationCardProps) {
+  const router = useRouter();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'SENT':
@@ -21,23 +24,36 @@ export function QuotationCard({ quote }: QuotationCardProps) {
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (!amount && amount !== 0) return '₹0.00';
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
     }).format(amount);
   };
 
-  const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+  const formatDate = (date: string | Date | undefined | null) => {
+    if (!date) return 'Invalid Date';
+    try {
+      return new Date(date).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
+  const handleClick = () => {
+    router.push(`/quotes/${quote.id}`);
   };
 
   return (
-    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+    <div
+      onClick={handleClick}
+      className="p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <h4 className="font-medium text-gray-900 text-sm">{quote.title}</h4>

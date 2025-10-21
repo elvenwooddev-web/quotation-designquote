@@ -3,27 +3,31 @@ import { supabase } from '@/lib/db';
 
 export async function GET() {
   try {
+    // Optimized query: Use a single query with aggregation instead of N+1 queries
+    // This fetches all clients with their quote counts in one database call
     const { data: clients, error } = await supabase
       .from('clients')
-      .select('*')
+      .select(`
+        *,
+        quotes:quotes(count)
+      `)
       .order('name', { ascending: true });
 
     if (error) throw error;
 
-    // Get quote counts for each client
-    const clientsWithCounts = await Promise.all(
-      (clients || []).map(async (client) => {
-        const { count } = await supabase
-          .from('quotes')
-          .select('*', { count: 'exact', head: true })
-          .eq('clientId', client.id);
-        
-        return {
-          ...client,
-          quoteCount: count || 0
-        };
-      })
-    );
+    // Map the aggregated counts to the quoteCount field
+    const clientsWithCounts = (clients || []).map(client => ({
+      id: client.id,
+      name: client.name,
+      email: client.email,
+      phone: client.phone,
+      address: client.address,
+      source: client.source,
+      expecteddealvalue: client.expecteddealvalue,
+      createdat: client.createdat,
+      updatedat: client.updatedat,
+      quoteCount: Array.isArray(client.quotes) ? client.quotes.length : 0
+    }));
 
     return NextResponse.json(clientsWithCounts);
   } catch (error) {
@@ -38,16 +42,25 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, phone, address } = body;
+    const { name, email, phone, address, source, expectedDealValue } = body;
+
+    // Prepare insert data
+    const insertData: any = {
+      name,
+      email,
+      phone,
+      address,
+      source: source || 'Other', // Default to 'Other' if not provided
+    };
+
+    // Add expectedDealValue only if it's provided and valid
+    if (expectedDealValue !== undefined && expectedDealValue !== null && expectedDealValue !== '') {
+      insertData.expecteddealvalue = Number(expectedDealValue);
+    }
 
     const { data: client, error } = await supabase
       .from('clients')
-      .insert({
-        name,
-        email,
-        phone,
-        address,
-      })
+      .insert(insertData)
       .select()
       .single();
 

@@ -5,6 +5,7 @@ import { Client } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ClientDialogProps {
@@ -20,6 +21,8 @@ export function ClientDialog({ open, onOpenChange, client, onSave }: ClientDialo
     email: '',
     phone: '',
     address: '',
+    source: 'Other',
+    expectedDealValue: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +34,8 @@ export function ClientDialog({ open, onOpenChange, client, onSave }: ClientDialo
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
+        source: client.source || 'Other',
+        expectedDealValue: client.expectedDealValue ? String(client.expectedDealValue) : '',
       });
     } else {
       setFormData({
@@ -38,6 +43,8 @@ export function ClientDialog({ open, onOpenChange, client, onSave }: ClientDialo
         email: '',
         phone: '',
         address: '',
+        source: 'Other',
+        expectedDealValue: '',
       });
     }
     setError(null);
@@ -45,7 +52,7 @@ export function ClientDialog({ open, onOpenChange, client, onSave }: ClientDialo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       setError('Name is required');
       return;
@@ -56,11 +63,30 @@ export function ClientDialog({ open, onOpenChange, client, onSave }: ClientDialo
       return;
     }
 
+    if (!formData.source) {
+      setError('Source is required');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      await onSave(formData);
+      // Prepare data with proper type conversion
+      const clientData: any = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        source: formData.source,
+      };
+
+      // Add expectedDealValue only if it has a value
+      if (formData.expectedDealValue && formData.expectedDealValue.trim() !== '') {
+        clientData.expectedDealValue = parseFloat(formData.expectedDealValue);
+      }
+
+      await onSave(clientData);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -119,6 +145,22 @@ export function ClientDialog({ open, onOpenChange, client, onSave }: ClientDialo
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Source *
+            </label>
+            <Select
+              value={formData.source}
+              onChange={(e) => handleInputChange('source', e.target.value)}
+              required
+            >
+              <option value="Organic">Organic</option>
+              <option value="Referral">Referral</option>
+              <option value="Paid Ads">Paid Ads</option>
+              <option value="Other">Other</option>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone
             </label>
             <Input
@@ -126,6 +168,20 @@ export function ClientDialog({ open, onOpenChange, client, onSave }: ClientDialo
               value={formData.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
               placeholder="Enter phone number"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Expected Deal Value
+            </label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.expectedDealValue}
+              onChange={(e) => handleInputChange('expectedDealValue', e.target.value)}
+              placeholder="Enter expected deal value (optional)"
             />
           </div>
 

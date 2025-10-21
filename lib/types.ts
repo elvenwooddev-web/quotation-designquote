@@ -30,6 +30,7 @@ export interface Client {
   phone: string | null;
   address: string | null;
   source: string;
+  expectedDealValue?: number | null;
   createdAt: Date | string;
   updatedAt: Date | string;
   quoteCount?: number;
@@ -53,6 +54,7 @@ export interface Quote {
   tax: number;
   grandTotal: number;
   status: QuoteStatus;
+  version: number;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

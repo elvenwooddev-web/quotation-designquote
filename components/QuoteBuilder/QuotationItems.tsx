@@ -29,7 +29,7 @@ export function QuotationItems() {
     const dimensions = item.dimensions || {};
     const newDimensions = {
       ...dimensions,
-      [field]: parseFloat(value) || 0,
+      [field]: value === '' ? 0 : parseFloat(value),
     };
 
     // Auto-calculate quantity if both length and width are present
@@ -194,12 +194,13 @@ export function QuotationItems() {
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={item.quantity}
-                                onChange={(e) =>
+                                value={item.quantity || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
                                   updateItem(item.id, {
-                                    quantity: parseFloat(e.target.value) || 0,
-                                  })
-                                }
+                                    quantity: value === '' ? 0 : parseFloat(value),
+                                  });
+                                }}
                                 className="text-sm"
                                 readOnly={isAreaUnit(item.product?.unit)}
                                 title={isAreaUnit(item.product?.unit) ? 'Auto-calculated from Length × Width' : ''}
@@ -214,12 +215,13 @@ export function QuotationItems() {
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={item.rate}
-                                onChange={(e) =>
+                                value={item.rate || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
                                   updateItem(item.id, {
-                                    rate: parseFloat(e.target.value) || 0,
-                                  })
-                                }
+                                    rate: value === '' ? 0 : parseFloat(value),
+                                  });
+                                }}
                                 className="text-sm"
                               />
                             </div>
@@ -234,12 +236,13 @@ export function QuotationItems() {
                                   min="0"
                                   max="100"
                                   step="0.01"
-                                  value={item.discount}
-                                  onChange={(e) =>
+                                  value={item.discount || ''}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
                                     updateItem(item.id, {
-                                      discount: parseFloat(e.target.value) || 0,
-                                    })
-                                  }
+                                      discount: value === '' ? 0 : parseFloat(value),
+                                    });
+                                  }}
                                   className="text-sm"
                                 />
                               </div>

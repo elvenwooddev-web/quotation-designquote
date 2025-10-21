@@ -27,8 +27,8 @@ export function PolicyBuilder() {
 
         {/* Policy Toggles */}
         <div className="space-y-4">
-          {policies.map((policy) => (
-            <div key={`${policy.type}-${policy.order}`} className="space-y-2">
+          {policies.map((policy, index) => (
+            <div key={`${policy.type}-${index}`} className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-gray-700">
                   {policy.title}

@@ -13,24 +13,46 @@ interface ClientSidebarProps {
 }
 
 export function ClientSidebar({ client, onClose }: ClientSidebarProps) {
-  const [revisions, setRevisions] = useState<any[]>([]);
+  const [quoteRevisions, setQuoteRevisions] = useState<any[]>([]);
   const [loadingRevisions, setLoadingRevisions] = useState(true);
 
   useEffect(() => {
-    fetchRevisions();
-  }, [client.id]);
+    fetchQuoteRevisions();
+  }, [client.id, client.quotes]);
 
-  const fetchRevisions = async () => {
+  const fetchQuoteRevisions = async () => {
     try {
       setLoadingRevisions(true);
-      const response = await fetch(`/api/clients/${client.id}/revisions`);
-      const data = await response.json();
-      
-      if (response.ok) {
-        setRevisions(data);
+
+      // Fetch revisions for all quotes belonging to this client
+      if (client.quotes && client.quotes.length > 0) {
+        const revisionPromises = client.quotes.map(async (quote) => {
+          const response = await fetch(`/api/quotes/${quote.id}/revisions`);
+          if (response.ok) {
+            const data = await response.json();
+            return data.map((rev: any) => ({
+              ...rev,
+              quoteTitle: quote.title,
+              quoteNumber: quote.quoteNumber,
+            }));
+          }
+          return [];
+        });
+
+        const allRevisions = await Promise.all(revisionPromises);
+        const flatRevisions = allRevisions.flat();
+
+        // Sort by date, most recent first
+        flatRevisions.sort((a, b) =>
+          new Date(b.exported_at).getTime() - new Date(a.exported_at).getTime()
+        );
+
+        setQuoteRevisions(flatRevisions);
+      } else {
+        setQuoteRevisions([]);
       }
     } catch (error) {
-      console.error('Error fetching revisions:', error);
+      console.error('Error fetching quote revisions:', error);
     } finally {
       setLoadingRevisions(false);
     }
@@ -103,15 +125,38 @@ export function ClientSidebar({ client, onClose }: ClientSidebarProps) {
 
       {/* Revision History Section */}
       <div className="px-6 py-4 border-t border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Revision History</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quote Revision History</h3>
         {loadingRevisions ? (
           <div className="flex items-center justify-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
-        ) : revisions.length > 0 ? (
-          <RevisionTimeline revisions={revisions} />
+        ) : quoteRevisions.length > 0 ? (
+          <div className="space-y-3">
+            {quoteRevisions.map((revision, index) => (
+              <div key={index} className="border-l-2 border-blue-500 pl-3 py-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {revision.quoteNumber || 'Quote'} - v{revision.version}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">{revision.quoteTitle}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {revision.notes || 'Updated'}
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {new Date(revision.exported_at).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
-          <p className="text-sm text-gray-500">No revisions yet</p>
+          <p className="text-sm text-gray-500">No quote revisions yet</p>
         )}
       </div>
     </div>

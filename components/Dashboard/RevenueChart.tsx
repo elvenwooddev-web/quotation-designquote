@@ -32,10 +32,17 @@ interface RevenueData {
 interface RevenueChartProps {
   data: RevenueData[];
   growth?: number;
+  period?: string;
   className?: string;
 }
 
-export function RevenueChart({ data, growth, className = '' }: RevenueChartProps) {
+export function RevenueChart({ data, growth, period = '30days', className = '' }: RevenueChartProps) {
+  // Calculate Y-axis range for auto-scaling
+  const revenues = data.map(d => d.revenue);
+  const maxRevenue = Math.max(...revenues, 0);
+  const minRevenue = Math.min(...revenues, 0);
+  const padding = maxRevenue * 0.1; // 10% padding above max
+
   const chartData = {
     labels: data.map(d => d.month),
     datasets: [
@@ -49,8 +56,8 @@ export function RevenueChart({ data, growth, className = '' }: RevenueChartProps
         tension: 0.4,
         pointBackgroundColor: 'rgb(59, 130, 246)',
         pointBorderColor: 'rgb(59, 130, 246)',
-        pointRadius: 6,
-        pointHoverRadius: 8,
+        pointRadius: data.length > 30 ? 3 : 6, // Smaller points for many data points
+        pointHoverRadius: data.length > 30 ? 5 : 8,
       },
     ],
   };
@@ -58,15 +65,55 @@ export function RevenueChart({ data, growth, className = '' }: RevenueChartProps
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 1500,
+      easing: 'easeInOutQuart' as const,
+      delay: (context: any) => {
+        let delay = 0;
+        if (context.type === 'data' && context.mode === 'default') {
+          delay = context.dataIndex * 50; // Stagger points by 50ms
+        }
+        return delay;
+      },
+      onComplete: () => {
+        // Animation complete
+      }
+    },
+    transitions: {
+      active: {
+        animation: {
+          duration: 800
+        }
+      }
+    },
     plugins: {
       legend: {
         display: false,
       },
       tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: {
+          size: 14,
+          weight: 'bold' as const,
+        },
+        bodyFont: {
+          size: 13,
+        },
         callbacks: {
-          label: function(context: any) {
-            return `Revenue: ₹${context.parsed.y.toLocaleString('en-IN')}`;
+          title: function(context: any) {
+            return context[0].label;
           },
+          label: function(context: any) {
+            const value = context.parsed.y;
+            return `Revenue: ₹${value.toLocaleString('en-IN')}`;
+          },
+          afterLabel: function(context: any) {
+            const total = revenues.reduce((a, b) => a + b, 0);
+            const percentage = total > 0 ? ((context.parsed.y / total) * 100).toFixed(1) : '0.0';
+            return `${percentage}% of total`;
+          }
         },
       },
     },
@@ -78,11 +125,16 @@ export function RevenueChart({ data, growth, className = '' }: RevenueChartProps
         ticks: {
           color: '#6B7280',
           font: {
-            size: 12,
+            size: data.length > 30 ? 10 : 12,
           },
+          maxRotation: data.length > 30 ? 45 : 0,
+          minRotation: data.length > 30 ? 45 : 0,
         },
       },
       y: {
+        beginAtZero: true,
+        suggestedMin: Math.max(0, minRevenue - padding),
+        suggestedMax: maxRevenue + padding,
         grid: {
           color: '#F3F4F6',
         },
@@ -92,6 +144,11 @@ export function RevenueChart({ data, growth, className = '' }: RevenueChartProps
             size: 12,
           },
           callback: function(value: any) {
+            if (value >= 100000) {
+              return `₹${(value / 100000).toFixed(1)}L`;
+            } else if (value >= 1000) {
+              return `₹${(value / 1000).toFixed(0)}K`;
+            }
             return `₹${value.toLocaleString('en-IN')}`;
           },
         },
@@ -113,7 +170,7 @@ export function RevenueChart({ data, growth, className = '' }: RevenueChartProps
         )}
       </div>
       <div className="h-64">
-        <Line data={chartData} options={options} />
+        <Line key={`${period}-${data.length}`} data={chartData} options={options} />
       </div>
     </div>
   );
