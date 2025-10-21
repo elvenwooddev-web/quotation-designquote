@@ -21,7 +21,11 @@
       "Bash(curl -s \"http://localhost:3004/api/dashboard?period=12months\")",
       "mcp__supabase__list_projects",
       "mcp__supabase__execute_sql",
-      "Bash(node -e \"const { supabase } = require(''./lib/db.ts''); supabase.from(''quote_revisions'').select(''*'').limit(1).then(r => console.log(r.error ? ''Table does not exist'' : ''Table exists'')).catch(e => console.log(''Error:'', e.message));\")"
+      "Bash(node -e \"const { supabase } = require(''./lib/db.ts''); supabase.from(''quote_revisions'').select(''*'').limit(1).then(r => console.log(r.error ? ''Table does not exist'' : ''Table exists'')).catch(e => console.log(''Error:'', e.message));\")",
+      "Bash(rm:*)",
+      "Bash(cp:*)",
+      "Bash(cmd //c \"rmdir /s /q intelli-quoter\")",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

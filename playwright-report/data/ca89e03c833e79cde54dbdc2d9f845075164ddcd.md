@@ -1,0 +1,124 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e4]:
+      - link "DQ DesignQuote" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e8]: DQ
+        - generic [ref=e9]: DesignQuote
+      - navigation [ref=e10]:
+        - link "Dashboard" [ref=e11] [cursor=pointer]:
+          - /url: /
+        - link "Quotations" [ref=e12] [cursor=pointer]:
+          - /url: /quotations
+        - link "Clients" [ref=e13] [cursor=pointer]:
+          - /url: /clients
+        - link "Catalog" [ref=e14] [cursor=pointer]:
+          - /url: /catalog
+      - generic [ref=e16]:
+        - link "Sign Up" [ref=e17] [cursor=pointer]:
+          - /url: /signup
+        - link "Sign In" [ref=e18] [cursor=pointer]:
+          - /url: /login
+  - generic [ref=e19]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - heading "Sales Dashboard" [level=1] [ref=e24]
+        - paragraph [ref=e25]: Welcome back, User
+      - generic [ref=e26]:
+        - button "Last 30 days" [ref=e27]:
+          - img [ref=e28]
+          - text: Last 30 days
+        - link "Create New Quotation" [ref=e30] [cursor=pointer]:
+          - /url: /quotes/new
+          - button "Create New Quotation" [ref=e31]:
+            - img [ref=e32]
+            - text: Create New Quotation
+        - generic [ref=e33]:
+          - img [ref=e35]
+          - generic [ref=e38]: User
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - paragraph [ref=e44]: Total Revenue
+            - paragraph [ref=e45]: ₹0
+          - generic [ref=e46]:
+            - img [ref=e47]
+            - generic [ref=e50]: 0.0%
+        - generic [ref=e53]:
+          - paragraph [ref=e54]: Sales Growth
+          - paragraph [ref=e55]: 0.0%
+        - generic [ref=e58]:
+          - paragraph [ref=e59]: Avg Deal Size
+          - paragraph [ref=e60]: ₹0
+        - generic [ref=e63]:
+          - paragraph [ref=e64]: Conversion Rate
+          - paragraph [ref=e65]: 50.0%
+      - generic [ref=e66]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - heading "Revenue Over Time" [level=3] [ref=e70]
+            - generic [ref=e71]:
+              - generic [ref=e72]: "Growth:"
+              - generic [ref=e73]: +0.0%
+          - img [ref=e75]
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - heading "Lead Sources" [level=3] [ref=e79]
+            - generic [ref=e80]:
+              - generic [ref=e81]: "10"
+              - generic [ref=e82]: Total Leads
+          - generic [ref=e83]:
+            - img [ref=e84]
+            - generic [ref=e86]:
+              - generic [ref=e87]: "10"
+              - generic [ref=e88]: Leads
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - heading "Top Deals" [level=3] [ref=e92]
+          - generic [ref=e93]: Last 30 days
+        - table [ref=e95]:
+          - rowgroup [ref=e96]:
+            - row "Deal Name Salesperson Amount Close Date" [ref=e97]:
+              - cell "Deal Name" [ref=e98]
+              - cell "Salesperson" [ref=e99]
+              - cell "Amount" [ref=e100]
+              - cell "Close Date" [ref=e101]
+          - rowgroup [ref=e102]:
+            - row "Retail Store Design Sophia Carter ₹0 15 Jun 2024" [ref=e103]:
+              - cell "Retail Store Design" [ref=e104]:
+                - generic [ref=e105]: Retail Store Design
+              - cell "Sophia Carter" [ref=e106]
+              - cell "₹0" [ref=e107]
+              - cell "15 Jun 2024" [ref=e108]
+            - row "Commercial Office Design Raj Patel ₹0 20 May 2024" [ref=e109]:
+              - cell "Commercial Office Design" [ref=e110]:
+                - generic [ref=e111]: Commercial Office Design
+              - cell "Raj Patel" [ref=e112]
+              - cell "₹0" [ref=e113]
+              - cell "20 May 2024" [ref=e114]
+            - row "Bedroom Makeover Sophia Carter ₹0 12 Apr 2024" [ref=e115]:
+              - cell "Bedroom Makeover" [ref=e116]:
+                - generic [ref=e117]: Bedroom Makeover
+              - cell "Sophia Carter" [ref=e118]
+              - cell "₹0" [ref=e119]
+              - cell "12 Apr 2024" [ref=e120]
+            - row "Kitchen Renovation Raj Patel ₹0 10 Feb 2024" [ref=e121]:
+              - cell "Kitchen Renovation" [ref=e122]:
+                - generic [ref=e123]: Kitchen Renovation
+              - cell "Raj Patel" [ref=e124]
+              - cell "₹0" [ref=e125]
+              - cell "10 Feb 2024" [ref=e126]
+            - row "Living Room Design Project Sophia Carter ₹0 15 Jan 2024" [ref=e127]:
+              - cell "Living Room Design Project" [ref=e128]:
+                - generic [ref=e129]: Living Room Design Project
+              - cell "Sophia Carter" [ref=e130]
+              - cell "₹0" [ref=e131]
+              - cell "15 Jan 2024" [ref=e132]
+  - button "Open Next.js Dev Tools" [ref=e138] [cursor=pointer]:
+    - img [ref=e139]
+  - alert [ref=e142]
+```
