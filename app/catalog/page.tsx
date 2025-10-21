@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import { hasPermission } from '@/lib/permissions';
 
 export default function CatalogPage() {
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -139,9 +139,9 @@ export default function CatalogPage() {
     }
   };
 
-  const canCreateProduct = user ? hasPermission(user.role, 'products', 'canCreate') : false;
-  const canEditProduct = user ? hasPermission(user.role, 'products', 'canEdit') : false;
-  const canDeleteProduct = user ? hasPermission(user.role, 'products', 'canDelete') : false;
+  const canCreateProduct = permissions ? hasPermission(permissions, 'products', 'cancreate') : false;
+  const canEditProduct = permissions ? hasPermission(permissions, 'products', 'canedit') : false;
+  const canDeleteProduct = permissions ? hasPermission(permissions, 'products', 'candelete') : false;
 
   return (
     <div className="flex min-h-screen bg-gray-50">

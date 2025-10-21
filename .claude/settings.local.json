@@ -25,9 +25,31 @@
       "Bash(rm:*)",
       "Bash(cp:*)",
       "Bash(cmd //c \"rmdir /s /q intelli-quoter\")",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(npm run dev:*)",
+      "Bash(cat:*)",
+      "Read(//Users/varun/Documents/**)",
+      "Bash(source ~/.zshrc)",
+      "Bash(source ~/.bashrc)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash([ -s \"$NVM_DIR/nvm.sh\" ])",
+      "Bash(. \"$NVM_DIR/nvm.sh\")",
+      "Bash(nvm use:*)",
+      "mcp__supabase__list_tables",
+      "Bash(node setup-admin.js:*)",
+      "mcp__supabase__get_logs",
+      "Bash(node:*)",
+      "mcp__supabase__apply_migration",
+      "Bash(lsof:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "outputStyle": "default"
 }

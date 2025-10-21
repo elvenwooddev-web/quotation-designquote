@@ -14,7 +14,7 @@ import { downloadTemplateAsFile, downloadTemplatesAsFile } from '@/lib/template-
 import TemplateImportDialog from '@/components/Templates/TemplateImportDialog';
 
 export default function TemplatesPage() {
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
   const router = useRouter();
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,9 +28,9 @@ export default function TemplatesPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Permission checks
-  const canCreate = user?.role ? hasPermission(user.role, 'quotes', 'canCreate') : false;
-  const canEdit = user?.role ? hasPermission(user.role, 'quotes', 'canEdit') : false;
-  const canDelete = user?.role ? hasPermission(user.role, 'quotes', 'canDelete') : false;
+  const canCreate = permissions ? hasPermission(permissions, 'quotes', 'cancreate') : false;
+  const canEdit = permissions ? hasPermission(permissions, 'quotes', 'canedit') : false;
+  const canDelete = permissions ? hasPermission(permissions, 'quotes', 'candelete') : false;
 
   useEffect(() => {
     fetchTemplates();

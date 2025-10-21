@@ -48,6 +48,7 @@ export async function GET(
       overallDiscount: quote.overalldiscount,
       taxRate: quote.taxrate,
       grandTotal: quote.grandtotal,
+      isApproved: quote.isapproved || false,
       createdAt: quote.createdat,
       updatedAt: quote.updatedat,
       client: quote.client ? {
@@ -156,6 +157,7 @@ export async function PUT(
         overallDiscount: quote.overalldiscount,
         taxRate: quote.taxrate,
         grandTotal: quote.grandtotal,
+        isApproved: quote.isapproved || false,
         createdAt: quote.createdat,
         updatedAt: quote.updatedat,
         client: quote.client ? {
@@ -386,6 +388,7 @@ export async function PUT(
       overallDiscount: finalQuote.overalldiscount,
       taxRate: finalQuote.taxrate,
       grandTotal: finalQuote.grandtotal,
+      isApproved: finalQuote.isapproved || false,
       createdAt: finalQuote.createdat,
       updatedAt: finalQuote.updatedat,
       client: finalQuote.client ? {

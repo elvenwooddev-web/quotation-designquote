@@ -2,13 +2,22 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuoteStore } from '@/lib/store';
 
 export function PolicyBuilder() {
   const policies = useQuoteStore((state) => state.policies);
   const updatePolicy = useQuoteStore((state) => state.updatePolicy);
+
+  // Get the first policy's description as the terms content
+  const termsContent = policies.find(p => p.isActive)?.description || '';
+
+  const handleTermsChange = (value: string) => {
+    // Update the first policy's description
+    if (policies.length > 0) {
+      updatePolicy(policies[0].type, { description: value, isActive: true });
+    }
+  };
 
   return (
     <Card>
@@ -17,58 +26,26 @@ export function PolicyBuilder() {
           <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-sm">
             4
           </span>
-          Policy Builder
+          Terms and Conditions
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-gray-600">
-          Select and customize policy clauses:
+          Add terms and conditions for this quotation:
         </p>
 
-        {/* Policy Toggles */}
-        <div className="space-y-4">
-          {policies.map((policy, index) => (
-            <div key={`${policy.type}-${index}`} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  {policy.title}
-                </label>
-                <Switch
-                  checked={policy.isActive}
-                  onCheckedChange={(checked) =>
-                    updatePolicy(policy.type, { isActive: checked })
-                  }
-                />
-              </div>
-              {policy.isActive && (
-                <Textarea
-                  value={policy.description}
-                  onChange={(e) =>
-                    updatePolicy(policy.type, { description: e.target.value })
-                  }
-                  rows={2}
-                  className="text-sm"
-                />
-              )}
-            </div>
-          ))}
-        </div>
+        <Textarea
+          value={termsContent}
+          onChange={(e) => handleTermsChange(e.target.value)}
+          placeholder="Enter terms and conditions here..."
+          rows={12}
+          className="text-sm font-mono"
+        />
 
-        {/* Custom Clauses */}
-        <div className="pt-4 border-t">
-          <label className="text-sm font-medium text-gray-700 block mb-2">
-            Custom Clauses
-          </label>
-          <Textarea
-            placeholder="Add any additional terms here..."
-            rows={4}
-            className="text-sm"
-          />
-        </div>
+        <p className="text-xs text-gray-500">
+          These terms will appear on the quotation PDF
+        </p>
       </CardContent>
     </Card>
   );
 }
-
-
-

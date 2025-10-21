@@ -25,7 +25,7 @@ export function ProductCatalog() {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [showProductDialog, setShowProductDialog] = useState(false);
   const addItem = useQuoteStore((state) => state.addItem);
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
 
   useEffect(() => {
     fetchCategories();
@@ -137,10 +137,10 @@ export function ProductCatalog() {
                 {category.name}
               </button>
             ))}
-            {user && hasPermission(user.role, 'categories', 'canCreate') && (
-              <Button 
-                variant="outline" 
-                size="sm" 
+            {permissions && hasPermission(permissions, 'categories', 'cancreate') && (
+              <Button
+                variant="outline"
+                size="sm"
                 className="mt-2"
                 onClick={() => setShowCategoryDialog(true)}
               >
@@ -198,10 +198,10 @@ export function ProductCatalog() {
             </div>
           )}
 
-          {user && hasPermission(user.role, 'products', 'canCreate') && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+          {permissions && hasPermission(permissions, 'products', 'cancreate') && (
+            <Button
+              variant="outline"
+              size="sm"
               className="w-full"
               onClick={() => setShowProductDialog(true)}
             >

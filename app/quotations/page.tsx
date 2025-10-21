@@ -16,6 +16,7 @@ interface Quote {
   status: string;
   grandtotal: number;
   createdat: string;
+  isApproved?: boolean;
   client: {
     id: string;
     name: string;
@@ -23,7 +24,7 @@ interface Quote {
 }
 
 export default function QuotationsPage() {
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
   const router = useRouter();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [filteredQuotes, setFilteredQuotes] = useState<Quote[]>([]);
@@ -34,8 +35,8 @@ export default function QuotationsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Permission checks
-  const canCreate = user?.role ? hasPermission(user.role, 'quotes', 'canCreate') : false;
-  const canDelete = user?.role ? hasPermission(user.role, 'quotes', 'canDelete') : false;
+  const canCreate = hasPermission(permissions, 'quotes', 'cancreate');
+  const canDelete = hasPermission(permissions, 'quotes', 'candelete');
 
   useEffect(() => {
     fetchQuotes();

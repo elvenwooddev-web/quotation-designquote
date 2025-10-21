@@ -22,8 +22,7 @@ export async function GET(
             *,
             category:categories(*)
           )
-        ),
-        policies:policy_clauses(*)
+        )
       `)
       .eq('id', id)
       .single();
@@ -34,6 +33,22 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    // Fetch terms and conditions from settings
+    const { data: termsData } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'terms_conditions')
+      .single();
+
+    // Create policies array from settings terms
+    const policies = termsData?.value ? [{
+      type: 'TERMS',
+      title: 'Terms and Conditions',
+      description: termsData.value,
+      isActive: true,
+      order: 1,
+    }] : [];
 
     // Map database columns to frontend format
     const mappedQuote = {
@@ -62,13 +77,7 @@ export async function GET(
           updatedAt: item.product.updatedat,
         } : null,
       })) || [],
-      policies: quote.policies?.map((policy: any) => ({
-        ...policy,
-        quoteId: policy.quoteid,
-        isActive: policy.isactive,
-        createdAt: policy.createdat,
-        updatedAt: policy.updatedat,
-      })) || [],
+      policies: policies,
     };
 
     // Load template for the quote (if templateid is set)

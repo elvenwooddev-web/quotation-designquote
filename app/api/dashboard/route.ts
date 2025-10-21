@@ -81,6 +81,47 @@ export async function GET(request: NextRequest) {
 
     console.log('Quotes fetched:', quotes?.length || 0);
 
+    // Get pending approvals count
+    const { count: pendingApprovalsCount, error: pendingCountError } = await supabase
+      .from('quotes')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'PENDING_APPROVAL');
+
+    if (pendingCountError) {
+      console.error('Pending approvals count error:', pendingCountError);
+    }
+
+    // Get pending approvals list (top 10)
+    const { data: pendingApprovalsList, error: pendingListError } = await supabase
+      .from('quotes')
+      .select(`
+        id,
+        quotenumber,
+        title,
+        grandtotal,
+        createdat,
+        client:clients(name)
+      `)
+      .eq('status', 'PENDING_APPROVAL')
+      .order('createdat', { ascending: false })
+      .limit(10);
+
+    if (pendingListError) {
+      console.error('Pending approvals list error:', pendingListError);
+    }
+
+    // Map pending approvals to camelCase format
+    // Note: createdByName is set to 'System' until we add createdby column to quotes table
+    const pendingApprovals = (pendingApprovalsList || []).map((quote: any) => ({
+      id: quote.id,
+      quoteNumber: quote.quotenumber,
+      title: quote.title,
+      grandTotal: quote.grandtotal,
+      createdAt: quote.createdat,
+      clientName: quote.client?.name || 'Unknown',
+      createdByName: 'System' // TODO: Add createdby column to quotes table
+    }));
+
     // Use real data if available, otherwise fall back to mock data
     const dataToUse = (quotes && quotes.length > 0) ? quotes : generateMockData(period);
 
@@ -92,7 +133,9 @@ export async function GET(request: NextRequest) {
         conversionRate: 0,
         revenueOverTime: [],
         leadSourceBreakdown: [],
-        topDeals: []
+        topDeals: [],
+        pendingApprovalsCount: pendingApprovalsCount || 0,
+        pendingApprovals
       });
     }
 
@@ -230,7 +273,9 @@ export async function GET(request: NextRequest) {
       conversionRate,
       revenueOverTime,
       leadSourceBreakdown,
-      topDeals
+      topDeals,
+      pendingApprovalsCount: pendingApprovalsCount || 0,
+      pendingApprovals
     });
 
   } catch (error) {

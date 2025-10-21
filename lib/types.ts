@@ -37,7 +37,7 @@ export interface Client {
 }
 
 export type DiscountMode = 'LINE_ITEM' | 'OVERALL' | 'BOTH';
-export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED';
+export type QuoteStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'SENT' | 'ACCEPTED' | 'REJECTED';
 export type PolicyType = 'WARRANTY' | 'RETURNS' | 'PAYMENT' | 'CUSTOM';
 
 export interface Quote {
@@ -55,6 +55,10 @@ export interface Quote {
   grandTotal: number;
   status: QuoteStatus;
   version: number;
+  isApproved: boolean;
+  approvedBy?: string;
+  approvedAt?: string;
+  approvalNotes?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -87,15 +91,24 @@ export interface PolicyClause {
 }
 
 // User Management Types
-export type UserRole = 'Admin' | 'Designer' | 'Client';
 export type PermissionResource = 'categories' | 'products' | 'clients' | 'quotes';
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  isprotected: boolean;
+  createdat: Date | string;
+  updatedat: Date | string;
+}
 
 export interface User {
   id: string;
   authuserid: string | null;
   name: string;
   email: string;
-  role: UserRole;
+  roleid: string;
+  role?: Role; // Optional - populated when joined with roles table
   isactive: boolean;
   createdat: Date | string;
   updatedat: Date | string;
@@ -103,13 +116,14 @@ export interface User {
 
 export interface RolePermission {
   id: string;
-  role: UserRole;
+  roleid: string;
   resource: PermissionResource;
-  canCreate: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
-  canApprove: boolean;
-  canExport: boolean;
+  canread: boolean;
+  cancreate: boolean;
+  canedit: boolean;
+  candelete: boolean;
+  canapprove: boolean;
+  canexport: boolean;
 }
 
 export interface QuoteItemWithProduct extends QuoteItem {

@@ -5,8 +5,6 @@ import { QuoteDetails } from '@/components/QuoteBuilder/QuoteDetails';
 import { DiscountModeTabs } from '@/components/QuoteBuilder/DiscountModeTabs';
 import { QuotationItems } from '@/components/QuoteBuilder/QuotationItems';
 import { Summary } from '@/components/QuoteBuilder/Summary';
-import { PolicyBuilder } from '@/components/QuoteBuilder/PolicyBuilder';
-import { TermsPreview } from '@/components/QuoteBuilder/TermsPreview';
 import { QuoteActions } from '@/components/QuoteBuilder/QuoteActions';
 
 export default function NewQuotePage() {
@@ -33,19 +31,10 @@ export default function NewQuotePage() {
           {/* Quotation Items */}
           <QuotationItems />
 
-          {/* Summary and Policy Builder Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column - Summary */}
-            <div className="space-y-4">
-              <Summary />
-              <QuoteActions />
-            </div>
-
-            {/* Right Column - Policy Builder */}
-            <div className="space-y-4">
-              <PolicyBuilder />
-              <TermsPreview />
-            </div>
+          {/* Summary and Actions */}
+          <div className="space-y-4">
+            <Summary />
+            <QuoteActions />
           </div>
         </div>
       </div>

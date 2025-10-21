@@ -1,44 +1,54 @@
-import { UserRole, PermissionResource } from './types';
+import { RolePermission, PermissionResource } from './types';
 
-export async function checkPermission(
-  userRole: UserRole,
+/**
+ * Check if user has permission for a specific action on a resource
+ * @param permissions - Array of role permissions from auth context
+ * @param resource - The resource to check (categories, products, clients, quotes)
+ * @param action - The action to check (cancreate, canedit, candelete, canapprove, canexport, canread)
+ * @returns boolean indicating if user has permission
+ */
+export function hasPermission(
+  permissions: RolePermission[],
   resource: PermissionResource,
-  action: 'canCreate' | 'canEdit' | 'canDelete' | 'canApprove' | 'canExport'
-): Promise<boolean> {
-  try {
-    const response = await fetch('/api/permissions');
-    const permissions = await response.json();
-    
-    const permission = permissions.find(
-      (p: any) => p.role === userRole && p.resource === resource
-    );
-    
-    return permission?.[action] || false;
-  } catch (error) {
-    console.error('Error checking permission:', error);
-    return false;
+  action: 'cancreate' | 'canedit' | 'candelete' | 'canapprove' | 'canexport' | 'canread'
+): boolean {
+  if (!permissions || permissions.length === 0) {
+    return false; // No permissions loaded
   }
+
+  // Find the permission entry for this resource
+  const permission = permissions.find(p => p.resource === resource);
+
+  if (!permission) {
+    return false; // No permission entry for this resource
+  }
+
+  // Check the specific action
+  return permission[action] || false;
 }
 
-export function hasPermission(
-  userRole: UserRole,
-  resource: PermissionResource,
-  action: 'canCreate' | 'canEdit' | 'canDelete' | 'canApprove' | 'canExport'
+/**
+ * Check if user has any permission for a resource
+ * @param permissions - Array of role permissions from auth context
+ * @param resource - The resource to check
+ * @returns boolean indicating if user has any permission for the resource
+ */
+export function hasAnyPermission(
+  permissions: RolePermission[],
+  resource: PermissionResource
 ): boolean {
-  // Quick permission check without API call
-  // This matches the permissions we inserted into the database
-  
-  if (userRole === 'Admin') {
-    return true; // Admin has all permissions
+  const permission = permissions.find(p => p.resource === resource);
+
+  if (!permission) {
+    return false;
   }
-  
-  if (userRole === 'Designer') {
-    return action !== 'canDelete'; // Designer can do everything except delete
-  }
-  
-  if (userRole === 'Client') {
-    return action === 'canApprove'; // Client can only approve
-  }
-  
-  return false;
+
+  return (
+    permission.cancreate ||
+    permission.canedit ||
+    permission.candelete ||
+    permission.canapprove ||
+    permission.canexport ||
+    permission.canread
+  );
 }

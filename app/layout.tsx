@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { ConditionalHeader } from "@/components/Navigation/ConditionalHeader";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,8 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <ConditionalHeader />
-          {children}
+          <ProtectedRoute>
+            <ConditionalHeader />
+            {children}
+          </ProtectedRoute>
         </AuthProvider>
       </body>
     </html>

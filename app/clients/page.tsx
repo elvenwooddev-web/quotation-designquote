@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
 
 export default function ClientsPage() {
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
@@ -22,9 +22,9 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Permission checks
-  const canCreate = user?.role ? hasPermission(user.role, 'clients', 'canCreate') : false;
-  const canEdit = user?.role ? hasPermission(user.role, 'clients', 'canEdit') : false;
-  const canDelete = user?.role ? hasPermission(user.role, 'clients', 'canDelete') : false;
+  const canCreate = permissions ? hasPermission(permissions, 'clients', 'cancreate') : false;
+  const canEdit = permissions ? hasPermission(permissions, 'clients', 'canedit') : false;
+  const canDelete = permissions ? hasPermission(permissions, 'clients', 'candelete') : false;
 
   useEffect(() => {
     fetchClients();

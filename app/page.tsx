@@ -6,10 +6,12 @@ import { MetricCard } from '@/components/Dashboard/MetricCard';
 import { RevenueChart } from '@/components/Dashboard/RevenueChart';
 import { LeadSourceChart } from '@/components/Dashboard/LeadSourceChart';
 import { TopDealsTable } from '@/components/Dashboard/TopDealsTable';
+import PendingApprovals from '@/components/Dashboard/PendingApprovals';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus, Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { hasPermission } from '@/lib/permissions';
 
 interface DashboardData {
   totalRevenue: number;
@@ -19,12 +21,22 @@ interface DashboardData {
   revenueOverTime: Array<{ month: string; revenue: number }>;
   leadSourceBreakdown: Array<{ source: string; count: number; percentage: number }>;
   topDeals: Array<{ id: string; dealName: string; salesperson: string; amount: number; closeDate: string }>;
+  pendingApprovalsCount: number;
+  pendingApprovals: Array<{
+    id: string;
+    quoteNumber: string;
+    title: string;
+    grandTotal: number;
+    createdAt: string;
+    clientName: string;
+    createdByName: string;
+  }>;
 }
 
 type TimePeriod = '7days' | '30days' | '90days' | '12months' | 'year';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -46,7 +58,7 @@ export default function Dashboard() {
       }
 
       const params = new URLSearchParams();
-      if (user?.role) params.append('role', user.role);
+      if (user?.role?.name) params.append('role', user.role.name);
       if (user?.id) params.append('userId', user.id);
       params.append('period', timePeriod);
 
@@ -165,8 +177,9 @@ export default function Dashboard() {
             value={dashboardData.avgDealSize}
           />
           <MetricCard
-            title="Conversion Rate"
-            value={dashboardData.conversionRate}
+            title="Pending Approvals"
+            value={dashboardData.pendingApprovalsCount}
+            icon={Clock}
           />
         </div>
 
@@ -188,6 +201,19 @@ export default function Dashboard() {
         <div className={`grid grid-cols-1 transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
           <TopDealsTable data={dashboardData.topDeals} period={timePeriod} />
         </div>
+
+        {/* Pending Approvals Section */}
+        {hasPermission(permissions, 'quotes', 'canapprove') && dashboardData.pendingApprovals.length > 0 && (
+          <div className={`grid grid-cols-1 mt-8 transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Pending Approvals</h3>
+              <PendingApprovals
+                approvals={dashboardData.pendingApprovals}
+                onRefresh={fetchDashboardData}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

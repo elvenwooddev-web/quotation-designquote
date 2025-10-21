@@ -7,6 +7,7 @@ import { Save } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { UserManagementTable } from '@/components/Settings/UserManagementTable';
 import { UserDialog } from '@/components/Settings/UserDialog';
+import { RoleManagement } from '@/components/Settings/RoleManagement';
 import { Plus } from 'lucide-react';
 import { CompanyInfoForm, CompanyInfo } from '@/components/Settings/CompanyInfoForm';
 import { CompanyLogoUpload } from '@/components/Settings/CompanyLogoUpload';
@@ -163,7 +164,7 @@ export default function SettingsPage() {
   };
 
   // Redirect if not admin
-  if (user?.role !== 'Admin') {
+  if (user?.role?.name !== 'Admin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -195,6 +196,7 @@ export default function SettingsPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue={activeTab}>
           <TabsList>
             <TabsTrigger value="user-management">User Management</TabsTrigger>
+            <TabsTrigger value="roles">Role Management</TabsTrigger>
             <TabsTrigger value="company-info">Company Info</TabsTrigger>
             <TabsTrigger value="pdf-editor">PDF Templates</TabsTrigger>
             <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
@@ -219,6 +221,11 @@ export default function SettingsPage() {
                 <UserManagementTable />
               </div>
             </div>
+          </TabsContent>
+
+          {/* Role Management Tab */}
+          <TabsContent value="roles">
+            <RoleManagement />
           </TabsContent>
 
           {/* Company Info Tab */}

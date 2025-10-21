@@ -2,13 +2,14 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from './db';
-import { User } from './types';
+import { User, RolePermission } from './types';
 
 interface AuthContextType {
   user: User | null;
+  permissions: RolePermission[];
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, userData: { name: string; role: string }) => Promise<void>;
+  signUp: (email: string, password: string, userData: { name: string; roleId: string }) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -24,39 +25,58 @@ export const useAuth = () => {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [permissions, setPermissions] = useState<RolePermission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for demo user in localStorage first
-    const checkDemoUser = () => {
-      if (typeof window !== 'undefined') {
-        const demoUser = localStorage.getItem('demo_user');
-        if (demoUser) {
-          try {
-            const user = JSON.parse(demoUser);
-            setUser(user);
-            setLoading(false);
-            return true;
-          } catch (error) {
-            localStorage.removeItem('demo_user');
-          }
-        }
-      }
-      return false;
-    };
+    let mounted = true;
 
-    // Check demo user first
-    if (checkDemoUser()) {
-      return;
-    }
+    // Timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (mounted) {
+        console.warn('[Auth] Session check timed out after 10 seconds');
+        setLoading(false);
+      }
+    }, 10000);
 
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        await fetchUserProfile(session.user.id);
-      } else {
-        setLoading(false);
+      try {
+        console.log('[Auth] Getting initial session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('[Auth] Error getting session:', error);
+          if (mounted) {
+            setUser(null);
+            setPermissions([]);
+            setLoading(false);
+            clearTimeout(timeout);
+          }
+          return;
+        }
+
+        console.log('[Auth] Session:', session ? 'Found' : 'None');
+
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
+          clearTimeout(timeout);
+        } else {
+          if (mounted) {
+            setUser(null);
+            setPermissions([]);
+            setLoading(false);
+            clearTimeout(timeout);
+          }
+        }
+      } catch (error) {
+        console.error('[Auth] Exception in getInitialSession:', error);
+        if (mounted) {
+          setUser(null);
+          setPermissions([]);
+          setLoading(false);
+          clearTimeout(timeout);
+        }
       }
     };
 
@@ -65,81 +85,146 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[Auth] Auth state changed:', event);
         if (session?.user) {
           await fetchUserProfile(session.user.id);
         } else {
-          setUser(null);
-          setLoading(false);
+          if (mounted) {
+            setUser(null);
+            setPermissions([]);
+            setLoading(false);
+          }
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (authUserId: string) => {
     try {
+      console.log('[Auth] Fetching user profile for auth ID:', authUserId);
+
+      // Fetch user with role information
       const { data: userProfile, error } = await supabase
         .from('users')
-        .select('*')
+        .select(`
+          *,
+          role:roles(
+            id,
+            name,
+            description,
+            isprotected,
+            createdat,
+            updatedat
+          )
+        `)
         .eq('authuserid', authUserId)
         .single();
 
+      console.log('[Auth] User profile response:', { userProfile, error });
+
       if (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('[Auth] Error fetching user profile:', error);
+        setUser(null);
+        setPermissions([]);
+        setLoading(false);
+        return;
+      }
+
+      if (!userProfile) {
+        console.error('[Auth] No user profile found');
+        setUser(null);
+        setPermissions([]);
         setLoading(false);
         return;
       }
 
       if (!userProfile.isactive) {
-        throw new Error('Account is deactivated');
+        console.error('[Auth] User account is deactivated');
+        setUser(null);
+        setPermissions([]);
+        setLoading(false);
+        return;
       }
 
-      setUser(userProfile);
+      // Use the data as-is since it's already in the correct format
+      console.log('[Auth] Setting user:', userProfile);
+      setUser(userProfile as User);
+
+      // Fetch permissions for the user's role
+      if (userProfile.roleid) {
+        await fetchRolePermissions(userProfile.roleid);
+      } else {
+        console.warn('[Auth] User has no role assigned');
+        setPermissions([]);
+      }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('[Auth] Exception in fetchUserProfile:', error);
+      setUser(null);
+      setPermissions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Demo function to bypass auth for testing
-  const signInDemo = async (email: string) => {
+  const fetchRolePermissions = async (roleId: string) => {
     try {
-      const { data: userProfile, error } = await supabase
-        .from('users')
+      console.log('[Auth] Fetching permissions for role:', roleId);
+      const { data: rolePermissions, error } = await supabase
+        .from('role_permissions')
         .select('*')
-        .eq('email', email)
-        .single();
+        .eq('roleid', roleId);
 
       if (error) {
-        throw new Error('User not found');
+        console.error('[Auth] Error fetching permissions:', error);
+        setPermissions([]);
+        return;
       }
 
-      if (!userProfile.isactive) {
-        throw new Error('Account is deactivated');
+      if (!rolePermissions) {
+        console.warn('[Auth] No permissions found for role');
+        setPermissions([]);
+        return;
       }
 
-      setUser(userProfile);
-    } catch (error: any) {
-      throw error;
+      // Use the data as-is since types match database columns
+      console.log('[Auth] Setting permissions:', rolePermissions);
+      setPermissions(rolePermissions as RolePermission[]);
+    } catch (error) {
+      console.error('[Auth] Exception in fetchRolePermissions:', error);
+      setPermissions([]);
     }
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('[Auth] Starting sign in...');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    console.log('[Auth] Sign in response:', { data, error });
+
     if (error) {
+      console.error('[Auth] Sign in error:', error);
       throw error;
     }
 
+    console.log('[Auth] Sign in successful, waiting for auth state change...');
     // The user profile will be fetched automatically via the auth state change listener
   };
 
-  const signUp = async (email: string, password: string, userData: { name: string; role: string }) => {
+  const signUp = async (email: string, password: string, userData: { name: string; roleId: string }) => {
+    // Validate email domain
+    if (!email.endsWith('@elvenwood.in')) {
+      throw new Error('Only @elvenwood.in email addresses are allowed');
+    }
+
     // Step 1: Create auth user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -161,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         authuserid: authData.user.id,
         name: userData.name,
         email: email,
-        role: userData.role,
+        roleid: userData.roleId,
         isactive: true,
         createdat: new Date().toISOString(),
         updatedat: new Date().toISOString(),
@@ -179,19 +264,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Clear demo user data
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('demo_user');
-    }
-    
     const { error } = await supabase.auth.signOut();
     if (error) {
       throw error;
     }
+    setUser(null);
+    setPermissions([]);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, permissions, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

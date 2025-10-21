@@ -28,19 +28,19 @@ export function UserManagementTable() {
 
   const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch('/api/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          isactive: !currentStatus,
+          id: userId,
+          isActive: !currentStatus,
         }),
       });
 
       if (response.ok) {
+        const updatedUser = await response.json();
         setUsers(users.map(user =>
-          user.id === userId
-            ? { ...user, isactive: !currentStatus }
-            : user
+          user.id === userId ? updatedUser : user
         ));
       }
     } catch (error) {
@@ -111,23 +111,27 @@ export function UserManagementTable() {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  user.role === 'Admin' 
+                  user.role?.name === 'Admin'
                     ? 'bg-red-100 text-red-800'
-                    : user.role === 'Designer'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-green-100 text-green-800'
+                    : user.role?.name === 'Sales Head'
+                    ? 'bg-purple-100 text-purple-800'
+                    : user.role?.name === 'Sales Executive'
+                    ? 'bg-indigo-100 text-indigo-800'
+                    : user.role?.name === 'Sales'
+                    ? 'bg-cyan-100 text-cyan-800'
+                    : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {user.role}
+                  {user.role?.name || 'No Role'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   <Switch
-                    checked={user.isactive}
-                    onCheckedChange={() => handleStatusToggle(user.id, user.isactive)}
+                    checked={user.isActive}
+                    onCheckedChange={() => handleStatusToggle(user.id, user.isActive)}
                   />
                   <span className="ml-2 text-sm text-gray-600">
-                    {user.isactive ? 'Active' : 'Inactive'}
+                    {user.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
               </td>

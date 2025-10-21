@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Eye, Download, Trash2 } from 'lucide-react';
+import { Eye, Download, Trash2, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Quote {
@@ -11,6 +11,7 @@ interface Quote {
   status: string;
   grandtotal: number;
   createdat: string;
+  isApproved?: boolean;
   client: {
     id: string;
     name: string;
@@ -112,6 +113,9 @@ export function QuotationsTable({ quotes, onDelete }: QuotationsTableProps) {
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Approval
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Value
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -144,6 +148,18 @@ export function QuotationsTable({ quotes, onDelete }: QuotationsTableProps) {
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(quote.status)}`}>
                     {quote.status}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {quote.isApproved ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Approved
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      Pending
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">

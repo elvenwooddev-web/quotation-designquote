@@ -33,6 +33,7 @@ export async function GET() {
       overallDiscount: quote.overalldiscount,
       taxRate: quote.taxrate,
       grandTotal: quote.grandtotal,
+      isApproved: quote.isapproved || false,
       createdAt: quote.createdat,
       updatedAt: quote.updatedat,
       template: quote.template ? {
@@ -73,7 +74,18 @@ export async function POST(request: NextRequest) {
       taxRate,
       items,
       policies,
+      status, // Accept status from request body
     } = body;
+
+    // TODO: Future enhancement - Role-based status assignment
+    // Once server-side auth context is available (e.g., via middleware or session):
+    // 1. Extract user role from authenticated session
+    // 2. If role is 'Sales Executive', automatically set status to 'PENDING_APPROVAL'
+    // 3. If role is 'Admin' or 'Manager', allow status to be 'DRAFT' or any other status
+    //
+    // For now, we accept status from the request body and default to 'DRAFT' if not provided.
+    // Sales Executive clients should send status='PENDING_APPROVAL' when creating quotes.
+    const quoteStatus = status || 'DRAFT';
 
     // Calculate line totals for items
     const itemsWithTotals = items.map((item: any, index: number) => ({
@@ -127,6 +139,7 @@ export async function POST(request: NextRequest) {
         discount: calculations.discount,
         tax: calculations.tax,
         grandtotal: calculations.grandTotal,
+        status: quoteStatus, // Use the determined status
       })
       .select()
       .single();

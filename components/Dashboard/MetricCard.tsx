@@ -1,16 +1,17 @@
 'use client';
 
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, LucideIcon } from 'lucide-react';
 
 interface MetricCardProps {
   title: string;
   value: string | number;
   change?: number;
   trend?: 'up' | 'down';
+  icon?: LucideIcon;
   className?: string;
 }
 
-export function MetricCard({ title, value, change, trend, className = '' }: MetricCardProps) {
+export function MetricCard({ title, value, change, trend, icon: Icon, className = '' }: MetricCardProps) {
   const formatValue = (val: string | number) => {
     if (typeof val === 'number') {
       if (title.includes('Revenue') || title.includes('Deal Size')) {
@@ -43,7 +44,12 @@ export function MetricCard({ title, value, change, trend, className = '' }: Metr
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
           <p className="text-2xl font-bold text-gray-900">{formatValue(value)}</p>
         </div>
-        {change !== undefined && (
+        {Icon && (
+          <div className="text-blue-600">
+            <Icon className="h-8 w-8" />
+          </div>
+        )}
+        {change !== undefined && !Icon && (
           <div className={`flex items-center space-x-1 ${getTrendColor()}`}>
             {getTrendIcon()}
             <span className="text-sm font-medium">

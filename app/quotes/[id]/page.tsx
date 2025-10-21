@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, Edit, Trash2, CheckCircle, Send } from 'lucide-react';
 import { hasPermission } from '@/lib/permissions';
 import { useAuth } from '@/lib/auth-context';
 
@@ -37,6 +37,7 @@ interface Quote {
   discount: number;
   tax: number;
   grandTotal: number;
+  isApproved: boolean;
   createdAt: string;
   client: {
     name: string;
@@ -60,15 +61,17 @@ export default function QuoteDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quoteId, setQuoteId] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
 
   // Permission checks
-  const canEdit = user?.role ? hasPermission(user.role, 'quotes', 'canEdit') : false;
-  const canDelete = user?.role ? hasPermission(user.role, 'quotes', 'canDelete') : false;
+  const canEdit = permissions ? hasPermission(permissions, 'quotes', 'canedit') : false;
+  const canDelete = permissions ? hasPermission(permissions, 'quotes', 'candelete') : false;
+  const canApprove = permissions ? hasPermission(permissions, 'quotes', 'canapprove') : false;
 
   useEffect(() => {
     params.then((resolvedParams) => {
@@ -139,6 +142,60 @@ export default function QuoteDetailPage({
         }
 
         router.push('/quotations');
+      } catch (err: any) {
+        alert(err.message);
+      }
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!canApprove || !quoteId) return;
+
+    setApproving(true);
+    try {
+      const response = await fetch(`/api/quotes/${quoteId}/approve`, {
+        method: 'PUT',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to approve quote');
+      }
+
+      const updatedQuote = await response.json();
+      setQuote(updatedQuote);
+      alert('Quote approved successfully!');
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleSendToClient = async () => {
+    if (!quoteId) return;
+
+    // Check if quote is approved (unless user is Admin with canDelete permission)
+    if (!quote?.isApproved && !(canDelete)) {
+      alert('Quote must be approved before sending to client.');
+      return;
+    }
+
+    if (confirm('Send this quote to the client?')) {
+      try {
+        const response = await fetch(`/api/quotes/${quoteId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'SENT' }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to send quote');
+        }
+
+        await fetchQuote(); // Refresh quote data
+        alert('Quote sent to client successfully!');
       } catch (err: any) {
         alert(err.message);
       }
@@ -230,12 +287,37 @@ export default function QuoteDetailPage({
               >
                 {quote.status}
               </span>
+              {quote.isApproved ? (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Approved
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+                  Pending Approval
+                </span>
+              )}
             </div>
             <div className="flex items-center space-x-3">
               <Button variant="outline" onClick={handleDownloadPDF}>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
               </Button>
+              {canApprove && !quote.isApproved && (
+                <Button
+                  onClick={handleApprove}
+                  disabled={approving}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {approving ? 'Approving...' : 'Approve Quote'}
+                </Button>
+              )}
+              {(quote.isApproved || canDelete) && quote.status === 'DRAFT' && (
+                <Button variant="outline" onClick={handleSendToClient}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send to Client
+                </Button>
+              )}
               {canEdit && (
                 <Button
                   variant="outline"

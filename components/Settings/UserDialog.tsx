@@ -1,11 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { UserRole } from '@/lib/types';
+
+interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+}
 
 interface UserDialogProps {
   open: boolean;
@@ -14,18 +19,52 @@ interface UserDialogProps {
 
 export function UserDialog({ open, onOpenChange }: UserDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'Client' as UserRole,
+    roleId: '',
   });
+
+  // Fetch roles when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchRoles();
+    }
+  }, [open]);
+
+  const fetchRoles = async () => {
+    setLoadingRoles(true);
+    try {
+      const response = await fetch('/api/roles');
+      if (!response.ok) throw new Error('Failed to fetch roles');
+      const data = await response.json();
+      setRoles(data);
+
+      // Set default role if not already set
+      if (data.length > 0 && !formData.roleId) {
+        setFormData(prev => ({ ...prev, roleId: data[0].id }));
+      }
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      alert('Failed to load roles');
+    } finally {
+      setLoadingRoles(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // Validate email domain
+      if (!formData.email.endsWith('@elvenwood.in')) {
+        throw new Error('Only @elvenwood.in email addresses are allowed');
+      }
+
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -38,13 +77,13 @@ export function UserDialog({ open, onOpenChange }: UserDialogProps) {
       }
 
       onOpenChange(false);
-      
+
       // Reset form
       setFormData({
         name: '',
         email: '',
         password: '',
-        role: 'Client',
+        roleId: roles.length > 0 ? roles[0].id : '',
       });
 
       // Refresh the page to show new user
@@ -86,9 +125,12 @@ export function UserDialog({ open, onOpenChange }: UserDialogProps) {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="Enter email address"
+              placeholder="user@elvenwood.in"
               required
             />
+            <p className="text-xs text-blue-600 mt-1">
+              Only @elvenwood.in email addresses are allowed
+            </p>
           </div>
 
           <div>
@@ -113,17 +155,29 @@ export function UserDialog({ open, onOpenChange }: UserDialogProps) {
               Role *
             </label>
             <Select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+              value={formData.roleId}
+              onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
               required
+              disabled={loadingRoles}
             >
-              <option value="Client">Client</option>
-              <option value="Designer">Designer</option>
-              <option value="Admin">Admin</option>
+              {loadingRoles ? (
+                <option value="">Loading roles...</option>
+              ) : roles.length === 0 ? (
+                <option value="">No roles available</option>
+              ) : (
+                roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                    {role.description ? ` - ${role.description}` : ''}
+                  </option>
+                ))
+              )}
             </Select>
-            <p className="text-xs text-gray-500 mt-1">
-              Admin: Full access | Designer: Create/Edit | Client: View only
-            </p>
+            {roles.find(r => r.id === formData.roleId)?.description && (
+              <p className="text-xs text-gray-500 mt-1">
+                {roles.find(r => r.id === formData.roleId)?.description}
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

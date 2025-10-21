@@ -47,9 +47,9 @@ export function Header() {
                 >
                   Catalog
                 </Link>
-            {user?.role === 'Admin' && (
-              <Link 
-                href="/settings" 
+            {user?.role?.name === 'Admin' && (
+              <Link
+                href="/settings"
                 className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Settings
