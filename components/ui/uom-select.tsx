@@ -120,7 +120,7 @@ export function UOMSelect({
       {/* Input Field */}
       <div className="relative">
         <div
-          className="flex items-center border border-gray-300 rounded px-3 py-2 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+          className="flex items-center border border-gray-300 rounded px-3 py-2 bg-white cursor-pointer hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
           onClick={handleToggle}
         >
           {isOpen ? (
@@ -141,7 +141,7 @@ export function UOMSelect({
             <>
               <div className="flex-1 text-sm truncate">
                 {selectedOption ? (
-                  <span className="text-gray-900 dark:text-white">{selectedOption.label}</span>
+                  <span className="text-gray-900">{selectedOption.label}</span>
                 ) : (
                   <span className="text-gray-400">{placeholder}</span>
                 )}
@@ -150,7 +150,7 @@ export function UOMSelect({
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="ml-2 text-gray-400 hover:text-gray-600 dark:text-gray-400 flex-shrink-0"
+                  className="ml-2 text-gray-400 hover:text-gray-600 flex-shrink-0"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -178,7 +178,7 @@ export function UOMSelect({
 
       {/* Dropdown List */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
           {filteredOptions.length > 0 ? (
             <div ref={dropdownRef}>
               {filteredOptions.map((option, index) => (
@@ -193,12 +193,12 @@ export function UOMSelect({
                   onMouseEnter={() => setHighlightedIndex(index)}
                 >
                   <div className="font-medium">{option.value}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{option.label}</div>
+                  <div className="text-xs text-gray-500">{option.label}</div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+            <div className="px-3 py-6 text-center text-sm text-gray-500">
               No units found matching "{searchQuery}"
             </div>
           )}
