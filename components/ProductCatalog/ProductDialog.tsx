@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { FileUpload } from '@/components/ui/file-upload';
+import { UOMSelect } from '@/components/ui/uom-select';
 
 interface ProductDialogProps {
   open: boolean;
@@ -120,11 +121,10 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSave 
                 <Label htmlFor="unit" className="block text-sm font-medium mb-1">
                   UOM *
                 </Label>
-                <Input
-                  id="unit"
+                <UOMSelect
                   value={formData.unit}
-                  onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                  placeholder="e.g., sq ft, m, kg"
+                  onChange={(value) => setFormData({...formData, unit: value})}
+                  placeholder="Search or select UOM"
                   required
                 />
               </div>
