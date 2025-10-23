@@ -34,8 +34,18 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setError('Login is taking too long. Please check your internet connection and try again.');
+        setLoading(false);
+      }
+    }, 15000); // 15 second timeout
+
     try {
       await signIn(email, password);
+
+      clearTimeout(timeoutId);
 
       // Save email if "Remember Me" is checked
       if (rememberMe) {
@@ -46,8 +56,20 @@ export default function LoginPage() {
 
       router.push('/');
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error('Login error:', err);
-      setError(err.message || 'Login failed');
+
+      // Provide more specific error messages
+      let errorMessage = 'Login failed';
+      if (err.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      } else if (err.message?.includes('Email not confirmed')) {
+        errorMessage = 'Please confirm your email address before signing in.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
       setLoading(false);
     }
   };
