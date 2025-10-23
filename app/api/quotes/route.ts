@@ -77,14 +77,10 @@ export async function POST(request: NextRequest) {
       status, // Accept status from request body
     } = body;
 
-    // TODO: Future enhancement - Role-based status assignment
-    // Once server-side auth context is available (e.g., via middleware or session):
-    // 1. Extract user role from authenticated session
-    // 2. If role is 'Sales Executive', automatically set status to 'PENDING_APPROVAL'
-    // 3. If role is 'Admin' or 'Manager', allow status to be 'DRAFT' or any other status
-    //
-    // For now, we accept status from the request body and default to 'DRAFT' if not provided.
-    // Sales Executive clients should send status='PENDING_APPROVAL' when creating quotes.
+    // Role-based status assignment is handled client-side in QuoteActions component
+    // - Sales Executives: quotes are created with status='PENDING_APPROVAL'
+    // - Admins/Sales Heads: quotes are created with status='DRAFT'
+    // Future enhancement: Add server-side validation to ensure status matches user role
     const quoteStatus = status || 'DRAFT';
 
     // Calculate line totals for items
@@ -124,7 +120,7 @@ export async function POST(request: NextRequest) {
       taxRate || 18
     );
 
-    // Create quote
+    // Create quote with version 1 for new quotes
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .insert({
@@ -140,6 +136,7 @@ export async function POST(request: NextRequest) {
         tax: calculations.tax,
         grandtotal: calculations.grandTotal,
         status: quoteStatus, // Use the determined status
+        version: 1, // New quotes start at version 1
       })
       .select()
       .single();

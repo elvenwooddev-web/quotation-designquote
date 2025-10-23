@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DiscountMode, Product, Client, PolicyType, Category, PDFTemplate } from './types';
+import { DiscountMode, Product, Client, PolicyType, Category } from './types';
 
 export interface ProductWithCategory extends Product {
   category: Category;
@@ -30,8 +30,6 @@ interface QuoteStore {
   title: string;
   clientId?: string;
   client?: Client;
-  templateId?: string;
-  template?: PDFTemplate;
   discountMode: DiscountMode;
   overallDiscount: number;
   taxRate: number;
@@ -45,217 +43,221 @@ interface QuoteStore {
   // Actions
   setTitle: (title: string) => void;
   setClient: (clientId?: string, client?: Client) => void;
-  setTemplate: (templateId?: string, template?: PDFTemplate) => void;
   setDiscountMode: (mode: DiscountMode) => void;
   setOverallDiscount: (discount: number) => void;
   setTaxRate: (rate: number) => void;
 
-  // Item actions
   addItem: (product: ProductWithCategory) => void;
-  removeItem: (id: string) => void;
   updateItem: (id: string, updates: Partial<QuoteItemStore>) => void;
+  removeItem: (id: string) => void;
 
-  // Policy actions
+  setPolicy: (type: PolicyType, policy: Partial<PolicyStore>) => void;
   togglePolicy: (type: PolicyType) => void;
-  updatePolicy: (type: PolicyType, updates: Partial<PolicyStore>) => void;
-  addCustomPolicy: (policy: PolicyStore) => void;
-  removeCustomPolicy: (type: PolicyType) => void;
+  updatePolicyOrder: (type: PolicyType, direction: 'up' | 'down') => void;
+
+  // Computed values
+  getSubtotal: () => number;
+  getDiscountAmount: () => number;
+  getTaxAmount: () => number;
+  getGrandTotal: () => number;
 
   // Reset
   reset: () => void;
+
+  // Load existing quote
   loadQuote: (quote: any) => void;
 }
 
 const defaultPolicies: PolicyStore[] = [
   {
     type: 'WARRANTY',
-    title: 'Standard Warranty (1-year)',
-    description: 'All products come with a standard 1-year warranty covering manufacturing defects.',
-    isActive: false,
+    title: 'Warranty',
+    description: 'Standard 1-year warranty on all products',
+    isActive: true,
     order: 1,
-  },
-  {
-    type: 'WARRANTY',
-    title: 'Extended Warranty (3-year)',
-    description: 'Extended warranty available covering all parts and services for 3 years.',
-    isActive: false,
-    order: 2,
   },
   {
     type: 'RETURNS',
-    title: 'No Returns Policy',
-    description: 'All sales are final. No returns or exchanges will be accepted after the order has been confirmed.',
-    isActive: false,
-    order: 3,
-  },
-  {
-    type: 'PAYMENT',
-    title: 'Payment Terms: 50% Upfront',
-    description: 'Payment terms: Full payment is required upon delivery and satisfactory installation.',
-    isActive: false,
-    order: 4,
-  },
-];
-
-const initialTerms: PolicyStore[] = [
-  {
-    type: 'CUSTOM',
-    title: 'All sales are final',
-    description: 'All sales are final. No returns or exchanges will be accepted after the order has been confirmed.',
-    isActive: true,
-    order: 1,
-  },
-  {
-    type: 'CUSTOM',
-    title: 'Prices exclusive of GST',
-    description: 'All prices are exclusive of GST (Goods and Services Tax) at 18% unless otherwise specified.',
+    title: 'Returns & Exchanges',
+    description: '30-day return policy for unused items',
     isActive: true,
     order: 2,
   },
   {
-    type: 'CUSTOM',
-    title: 'Payment terms',
-    description: 'Full payment is required upon delivery and satisfactory installation.',
+    type: 'PAYMENT',
+    title: 'Payment Terms',
+    description: '50% advance, 50% on completion',
     isActive: true,
     order: 3,
   },
-  {
-    type: 'CUSTOM',
-    title: 'Quotation validity',
-    description: 'The quotation is valid for 30 days from the date of issue.',
-    isActive: true,
-    order: 4,
-  },
-  {
-    type: 'CUSTOM',
-    title: 'Delays in project completion',
-    description: 'Any delays in project completion due to unforeseen circumstances or client-side issues will be communicated promptly.',
-    isActive: true,
-    order: 5,
-  },
 ];
 
-export const useQuoteStore = create<QuoteStore>((set) => ({
+export const useQuoteStore = create<QuoteStore>((set, get) => ({
   // Initial state
   title: '',
+  clientId: undefined,
+  client: undefined,
   discountMode: 'LINE_ITEM',
   overallDiscount: 0,
   taxRate: 18,
   items: [],
-  policies: initialTerms,
+  policies: [...defaultPolicies],
 
   // Actions
   setTitle: (title) => set({ title }),
-
   setClient: (clientId, client) => set({ clientId, client }),
-
-  setTemplate: (templateId, template) => set({ templateId, template }),
-
   setDiscountMode: (mode) => set({ discountMode: mode }),
-  
   setOverallDiscount: (discount) => set({ overallDiscount: discount }),
-  
   setTaxRate: (rate) => set({ taxRate: rate }),
 
-  // Item actions
-  addItem: (product) =>
-    set((state) => ({
-      items: [
-        ...state.items,
-        {
-          id: `temp-${Date.now()}-${Math.random()}`,
-          productId: product.id,
-          product,
-          quantity: 1,
-          rate: product.baseRate,
-          discount: 0,
-        },
-      ],
-    })),
+  addItem: (product) => {
+    const newItem: QuoteItemStore = {
+      id: Math.random().toString(36).substr(2, 9),
+      productId: product.id,
+      product: product,
+      quantity: 1,
+      rate: product.baseRate,
+      discount: 0,
+      description: product.description || '',
+      dimensions: {},
+    };
+    set((state) => ({ items: [...state.items, newItem] }));
+  },
 
-  removeItem: (id) =>
+  updateItem: (id, updates) => {
     set((state) => ({
-      items: state.items.filter((item) => item.id !== id),
-    })),
+      items: state.items.map((item) => {
+        if (item.id === id) {
+          // If dimensions are updated and contain length and width, calculate quantity
+          if (updates.dimensions) {
+            const { length, width } = updates.dimensions;
+            if (length && width) {
+              const calculatedQty = parseFloat(length) * parseFloat(width);
+              if (!isNaN(calculatedQty)) {
+                updates.quantity = calculatedQty;
+              }
+            }
+          }
+          return { ...item, ...updates };
+        }
+        return item;
+      }),
+    }));
+  },
 
-  updateItem: (id, updates) =>
+  removeItem: (id) => {
+    set((state) => ({ items: state.items.filter((item) => item.id !== id) }));
+  },
+
+  setPolicy: (type, policy) => {
     set((state) => ({
-      items: state.items.map((item) =>
-        item.id === id ? { ...item, ...updates } : item
+      policies: state.policies.map((p) =>
+        p.type === type ? { ...p, ...policy } : p
       ),
-    })),
+    }));
+  },
 
-  // Policy actions
-  togglePolicy: (type) =>
+  togglePolicy: (type) => {
     set((state) => ({
-      policies: state.policies.map((policy) =>
-        policy.type === type
-          ? { ...policy, isActive: !policy.isActive }
-          : policy
+      policies: state.policies.map((p) =>
+        p.type === type ? { ...p, isActive: !p.isActive } : p
       ),
-    })),
+    }));
+  },
 
-  updatePolicy: (type, updates) =>
-    set((state) => ({
-      policies: state.policies.map((policy) =>
-        policy.type === type ? { ...policy, ...updates } : policy
-      ),
-    })),
+  updatePolicyOrder: (type, direction) => {
+    set((state) => {
+      const policies = [...state.policies];
+      const index = policies.findIndex((p) => p.type === type);
 
-  addCustomPolicy: (policy) =>
-    set((state) => ({
-      policies: [...state.policies, policy],
-    })),
+      if (index === -1) return state;
 
-  removeCustomPolicy: (type) =>
-    set((state) => ({
-      policies: state.policies.filter((policy) => policy.type !== type),
-    })),
+      const newIndex = direction === 'up'
+        ? Math.max(0, index - 1)
+        : Math.min(policies.length - 1, index + 1);
 
-  // Reset
-  reset: () =>
+      if (index === newIndex) return state;
+
+      const [policy] = policies.splice(index, 1);
+      policies.splice(newIndex, 0, policy);
+
+      // Update order values
+      return {
+        policies: policies.map((p, i) => ({ ...p, order: i + 1 })),
+      };
+    });
+  },
+
+  // Computed values
+  getSubtotal: () => {
+    const state = get();
+    return state.items.reduce((sum, item) => {
+      const lineTotal = item.quantity * item.rate * (1 - item.discount / 100);
+      return sum + lineTotal;
+    }, 0);
+  },
+
+  getDiscountAmount: () => {
+    const state = get();
+    const subtotal = get().getSubtotal();
+
+    if (state.discountMode === 'OVERALL' || state.discountMode === 'BOTH') {
+      return subtotal * (state.overallDiscount / 100);
+    }
+    return 0;
+  },
+
+  getTaxAmount: () => {
+    const state = get();
+    const subtotal = get().getSubtotal();
+    const discount = get().getDiscountAmount();
+    const taxableAmount = subtotal - discount;
+    return taxableAmount * (state.taxRate / 100);
+  },
+
+  getGrandTotal: () => {
+    const subtotal = get().getSubtotal();
+    const discount = get().getDiscountAmount();
+    const tax = get().getTaxAmount();
+    return subtotal - discount + tax;
+  },
+
+  // Reset store
+  reset: () => {
     set({
       quoteId: undefined,
       title: '',
       clientId: undefined,
       client: undefined,
-      templateId: undefined,
-      template: undefined,
       discountMode: 'LINE_ITEM',
       overallDiscount: 0,
       taxRate: 18,
       items: [],
-      policies: initialTerms,
-    }),
+      policies: [...defaultPolicies],
+    });
+  },
 
-  loadQuote: (quote) =>
+  // Load existing quote
+  loadQuote: (quote) => {
     set({
       quoteId: quote.id,
-      title: quote.title,
+      title: quote.title || '',
       clientId: quote.clientId,
       client: quote.client,
-      templateId: quote.templateId,
-      template: quote.template,
-      discountMode: quote.discountMode,
-      overallDiscount: quote.overallDiscount,
-      taxRate: quote.taxRate,
+      discountMode: quote.discountMode || 'LINE_ITEM',
+      overallDiscount: quote.overallDiscount || 0,
+      taxRate: quote.taxRate || 18,
       items: quote.items.map((item: any) => ({
         id: item.id,
-        productId: item.productId,
+        productId: item.productId || item.product?.id,
         product: item.product,
-        quantity: item.quantity,
-        rate: item.rate,
-        discount: item.discount,
-        description: item.description,
-        dimensions: item.dimensions,
+        quantity: item.quantity || 1,
+        rate: item.rate || item.product?.baseRate || 0,
+        discount: item.discount || 0,
+        description: item.description || '',
+        dimensions: item.dimensions || {},
       })),
-      policies: quote.policies.map((policy: any) => ({
-        type: policy.type,
-        title: policy.title,
-        description: policy.description,
-        isActive: policy.isActive,
-        order: policy.order,
-      })),
-    }),
+      policies: quote.policies?.length ? quote.policies : [...defaultPolicies],
+    });
+  },
 }));
-

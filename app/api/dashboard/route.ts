@@ -79,8 +79,6 @@ export async function GET(request: NextRequest) {
       console.error('Quotes query error:', quotesError);
     }
 
-    console.log('Quotes fetched:', quotes?.length || 0);
-
     // Get pending approvals count
     const { count: pendingApprovalsCount, error: pendingCountError } = await supabase
       .from('quotes')

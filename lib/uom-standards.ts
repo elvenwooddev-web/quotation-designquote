@@ -6,7 +6,7 @@
 export interface UOMOption {
   value: string;
   label: string;
-  category: 'area' | 'linear' | 'volume' | 'weight' | 'quantity' | 'special';
+  category: 'area' | 'linear' | 'volume' | 'weight' | 'quantity' | 'special' | string;
 }
 
 /**

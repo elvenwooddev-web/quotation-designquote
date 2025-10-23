@@ -158,9 +158,9 @@ export default function CatalogPage() {
       {/* Main Content */}
       <div className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Product Catalog</h1>
+          <h1 className="text-3xl font-bold text-gray-900" data-testid="catalog-page-title">Product Catalog</h1>
           {canCreateProduct && activeTab === 'catalog' && (
-            <Button onClick={handleAddProduct}>
+            <Button onClick={handleAddProduct} data-testid="add-product-button">
               <Plus className="h-4 w-4 mr-2" />
               New Item
             </Button>

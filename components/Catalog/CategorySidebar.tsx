@@ -91,10 +91,11 @@ export function CategorySidebar({ categories, selectedCategory, onSelectCategory
         <button
           onClick={() => onSelectCategory('all')}
           className={`w-full flex justify-between items-center p-3 rounded-lg text-left transition-colors ${
-            selectedCategory === 'all' 
-              ? 'bg-blue-50 text-blue-600 border border-blue-200' 
+            selectedCategory === 'all'
+              ? 'bg-blue-50 text-blue-600 border border-blue-200'
               : 'hover:bg-gray-50 border border-transparent'
           }`}
+          data-testid="category-filter-all"
         >
           <span className="font-medium">All Items</span>
           <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
@@ -114,6 +115,7 @@ export function CategorySidebar({ categories, selectedCategory, onSelectCategory
             <button
               onClick={() => onSelectCategory(category.id)}
               className="flex-1 flex justify-between items-center"
+              data-testid={`category-filter-${category.id}`}
             >
               <span className="font-medium">{category.name}</span>
               <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">

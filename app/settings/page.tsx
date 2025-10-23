@@ -12,7 +12,6 @@ import { Plus } from 'lucide-react';
 import { CompanyInfoForm, CompanyInfo } from '@/components/Settings/CompanyInfoForm';
 import { CompanyLogoUpload } from '@/components/Settings/CompanyLogoUpload';
 import { TermsConditionsEditor } from '@/components/Settings/TermsConditionsEditor';
-import { TemplateManager } from '@/components/Settings/TemplateManager';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -67,12 +66,8 @@ export default function SettingsPage() {
         setTerms(termsData.content);
       }
 
-      // Load PDF template
-      const templateRes = await fetch('/api/settings/pdf-template');
-      if (templateRes.ok) {
-        const templateData = await templateRes.json();
-        setPdfTemplate(templateData.elements);
-      }
+      // PDF template loading removed - endpoint doesn't exist
+      // Template functionality is not currently implemented in UI
 
       // Store initial state
       const state = {
@@ -135,14 +130,8 @@ export default function SettingsPage() {
 
       if (!termsRes.ok) throw new Error('Failed to save terms');
 
-      // Save PDF template
-      const templateRes = await fetch('/api/settings/pdf-template', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ elements: pdfTemplate }),
-      });
-
-      if (!templateRes.ok) throw new Error('Failed to save PDF template');
+      // PDF template save removed - endpoint doesn't exist
+      // Template functionality is not currently implemented in UI
 
       alert('Settings saved successfully!');
       await loadSettings(); // Reload to update initial state
@@ -198,8 +187,6 @@ export default function SettingsPage() {
             <TabsTrigger value="user-management">User Management</TabsTrigger>
             <TabsTrigger value="roles">Role Management</TabsTrigger>
             <TabsTrigger value="company-info">Company Info</TabsTrigger>
-            <TabsTrigger value="pdf-editor">PDF Templates</TabsTrigger>
-            <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
           </TabsList>
 
           {/* User Management Tab */}
@@ -243,16 +230,6 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-          </TabsContent>
-
-          {/* PDF Templates Tab */}
-          <TabsContent value="pdf-editor">
-            <TemplateManager />
-          </TabsContent>
-
-          {/* Terms & Conditions Tab */}
-          <TabsContent value="terms">
-            <TermsConditionsEditor value={terms} onChange={setTerms} />
           </TabsContent>
         </Tabs>
 

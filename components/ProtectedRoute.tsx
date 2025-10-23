@@ -31,7 +31,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Only redirect if not on a public route and not authenticated
     if (!loading && !user && !isPublicRoute) {
-      console.log('[ProtectedRoute] Redirecting to login');
       router.push('/login');
     }
   }, [user, loading, router, isPublicRoute, pathname]);
@@ -66,7 +65,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Don't render protected content if not authenticated
   if (!user) {
-    console.log('[ProtectedRoute] No user, redirecting...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-gray-600">Redirecting to login...</p>

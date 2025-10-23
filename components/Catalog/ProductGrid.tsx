@@ -14,7 +14,7 @@ interface ProductGridProps {
 
 export function ProductGrid({ products, onEdit, onDelete, canEdit, canDelete }: ProductGridProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200" data-testid="products-grid">
       <div className="overflow-x-auto">
         <table className="min-w-full">
           <thead className="bg-gray-50 border-b">
@@ -45,7 +45,7 @@ export function ProductGrid({ products, onEdit, onDelete, canEdit, canDelete }: 
               </tr>
             ) : (
               products.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={product.id} className="hover:bg-gray-50 transition-colors" data-testid="product-row">
                   <td className="px-6 py-4">
                     <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
                       {product.imageUrl ? (
@@ -78,6 +78,8 @@ export function ProductGrid({ products, onEdit, onDelete, canEdit, canDelete }: 
                           variant="ghost"
                           size="sm"
                           onClick={() => onEdit(product)}
+                          data-testid="edit-product-button"
+                          aria-label="Edit product"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -87,6 +89,8 @@ export function ProductGrid({ products, onEdit, onDelete, canEdit, canDelete }: 
                           variant="ghost"
                           size="sm"
                           onClick={() => onDelete(product.id)}
+                          data-testid="delete-product-button"
+                          aria-label="Delete product"
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>

@@ -230,6 +230,10 @@ export async function PUT(
 
     if (fetchError) throw fetchError;
 
+    // Get the current version and increment it
+    const currentVersion = currentQuote.version || 1;
+    const newVersion = currentVersion + 1;
+
     // Fetch product details for each item to get category info
     const itemsWithProducts = await Promise.all(
       items.map(async (item: any) => {
@@ -265,7 +269,7 @@ export async function PUT(
       taxRate
     );
 
-    // Update quote header
+    // Update quote header with incremented version
     const { data: updatedQuote, error: quoteError } = await supabase
       .from('quotes')
       .update({
@@ -279,6 +283,7 @@ export async function PUT(
         discount: totals.discount,
         tax: totals.tax,
         grandtotal: totals.grandTotal,
+        version: newVersion, // Increment version on edit
         updatedat: new Date().toISOString(),
       })
       .eq('id', id)

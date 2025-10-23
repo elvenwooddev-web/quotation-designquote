@@ -34,9 +34,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      console.log('Attempting login for:', email);
       await signIn(email, password);
-      console.log('Login successful');
 
       // Save email if "Remember Me" is checked
       if (rememberMe) {
@@ -45,7 +43,6 @@ export default function LoginPage() {
         localStorage.removeItem('remembered_email');
       }
 
-      console.log('Redirecting to home page...');
       router.push('/');
     } catch (err: any) {
       console.error('Login error:', err);

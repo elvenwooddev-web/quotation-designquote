@@ -261,6 +261,60 @@ export async function GET(
   - Cannot directly access server-side resources
   - Examples: forms, interactive tables, dialogs
 
+### Optimistic UI Updates Pattern
+
+**New Pattern (Oct 23, 2025)**: For better UX, implement optimistic updates for user actions that modify data.
+
+```typescript
+const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
+  // 1. Optimistic update - immediately update UI
+  const newStatus = !currentStatus;
+  setUsers(users.map(user =>
+    user.id === userId ? { ...user, isactive: newStatus } : user
+  ));
+  setUpdatingUserId(userId);
+
+  try {
+    // 2. Make API call
+    const response = await fetch('/api/users', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: userId, isactive: newStatus }),
+    });
+
+    if (!response.ok) throw new Error('Failed to update');
+
+    // 3. Confirm with server response
+    const updatedUser = await response.json();
+    setUsers(users.map(user =>
+      user.id === userId ? updatedUser : user
+    ));
+  } catch (error) {
+    // 4. Rollback on error
+    setUsers(users.map(user =>
+      user.id === userId ? { ...user, isactive: currentStatus } : user
+    ));
+    alert('Failed to update. Please try again.');
+  } finally {
+    setUpdatingUserId(null);
+  }
+};
+```
+
+**Benefits**:
+- ✅ Instant UI feedback (no waiting for API)
+- ✅ Visual loading indicators during API call
+- ✅ Automatic rollback on errors
+- ✅ Better perceived performance
+
+**Use Cases**:
+- Status toggles (Active/Inactive)
+- Boolean flags (enabled/disabled)
+- Simple state changes
+- Non-critical updates
+
+**See**: `components/Settings/UserManagementTable.tsx:30-66` for implementation example.
+
 ## State Management with Zustand
 
 The quote builder uses Zustand for client-side state management ([lib/store.ts](lib/store.ts:1-252)):
@@ -694,27 +748,33 @@ See [approval.md](approval.md) for complete documentation.
 
 ### 4. Quote Versioning & Revision Tracking
 
-**Overview:** Automatic version tracking for quote exports and status changes.
+**Overview:** Automatic version tracking for quote creation and edits. (Updated October 23, 2025)
 
 **Features:**
-- **Auto-versioning:** Increments version on each PDF export
-- **Revision History:** Records all exports with metadata
-- **Status Transitions:** Tracks DRAFT → SENT on first export
-- **Metadata:** Exported by, exported at, changes, notes
+- **Version 1 for New Quotes:** All new quotes start at version 1
+- **Auto-increment on Edit:** Version increments by 1 each time quote is edited
+- **Revision History:** Complete change tracking in `quote_revisions` table
+- **Change Tracking:** Field-by-field comparison of what changed
+- **Metadata:** Edited by, edited at, changes, notes
 
 **Workflow:**
 1. Quote created: version = 1, status = DRAFT
-2. First PDF export: version = 1, status = SENT
-3. Subsequent exports: version increments (2, 3, 4...)
-4. Each export creates `quote_revisions` entry
+2. First edit: version = 2, revision history entry created
+3. Subsequent edits: version increments (3, 4, 5...)
+4. Each edit creates `quote_revisions` entry with previous version data
 
 **Database:**
 - `quotes.version` column (integer)
 - `quote_revisions` table: quoteid, version, status, exported_by, exported_at, changes, notes
 
 **Files:**
-- `app/api/quotes/[id]/pdf/route.ts` - PDF generation with versioning (lines 141-184)
+- `app/api/quotes/route.ts` - Sets version: 1 for new quotes (line 139)
+- `app/api/quotes/[id]/route.ts` - Increments version on edit (lines 234-235, 286, 353-361)
+- `app/api/quotes/[id]/pdf/route.ts` - PDF generation with versioning
 - `app/api/quotes/[id]/revisions/route.ts` - Revision history API
+
+**Testing:**
+- Run `node test-revision-system.js` to verify revision system works correctly
 
 ---
 
@@ -898,9 +958,22 @@ Currently no automated tests configured. Manual testing workflow:
 
 ---
 
-**Last Updated**: 2025-10-22
+**Last Updated**: 2025-10-23
 
 ## Recent Updates (October 2025)
+
+### Latest Changes (Oct 23, 2025):
+1. ✅ **Approval Workflow Fix** - Role-based quote status assignment now working
+   - Sales Executives create quotes with `PENDING_APPROVAL` status
+   - Admin/Sales Head create quotes with `DRAFT` status
+   - Optimistic UI updates for instant feedback
+2. ✅ **User Status Toggle Optimization** - Instant status switching with visual feedback
+   - Optimistic updates (immediate UI response)
+   - Loading spinner during API call
+   - Automatic rollback on error
+3. ✅ **Dashboard Enhancement** - Pending approvals always visible for approvers
+4. ✅ **Codebase Cleanup** - Removed 16 redundant documentation files
+5. ✅ **Playwright Test Suite** - Created comprehensive approval workflow tests
 
 ### Major Features Added:
 1. ✅ **Quote Approval System** - Full approval workflow with dashboard integration
@@ -926,12 +999,15 @@ Currently no automated tests configured. Manual testing workflow:
 - `GET /api/settings/pdf-template` - PDF template configuration
 - `GET /api/quotes/[id]/revisions` - Quote revision history
 
-### Components Added:
+### Components Added/Modified:
 - `PendingApprovals` - Approval table with approve/reject actions
 - `RoleManagement` - Role list with CRUD operations
 - `RoleDialog` - Create/edit role dialog
 - `PermissionsEditor` - Visual permission grid editor
 - Enhanced `MetricCard` with icon support
+- **Modified (Oct 23)**: `QuoteActions` - Added role-based status assignment
+- **Modified (Oct 23)**: `UserManagementTable` - Optimistic updates for status toggle
+- **Modified (Oct 23)**: `Dashboard` - Pending approvals always visible
 
 ### Breaking Changes:
 - **PolicyBuilder removed** from quote creation flow

@@ -34,8 +34,19 @@ export async function GET(request: NextRequest) {
       baseRate: product.baserate,
       categoryId: product.categoryid,
       imageUrl: product.imageurl,
+      isActive: product.isactive,
       createdAt: product.createdat,
       updatedAt: product.updatedat,
+      // Map category fields if category exists
+      category: product.category ? {
+        id: product.category.id,
+        name: product.category.name,
+        description: product.category.description,
+        isActive: product.category.isactive,
+        parentId: product.category.parentid,
+        createdAt: product.category.createdat,
+        updatedAt: product.category.updatedat,
+      } : undefined,
     })) || [];
 
     return NextResponse.json(mappedProducts);

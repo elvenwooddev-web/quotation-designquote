@@ -68,6 +68,7 @@ export function Summary() {
                       setOverallDiscount(parseFloat(e.target.value) || 0)
                     }
                     className="w-20 h-8 text-sm"
+                    data-testid="overall-discount-input"
                   />
                   <span className="text-xs">%</span>
                   <span className="font-medium text-red-600 w-24 text-right">

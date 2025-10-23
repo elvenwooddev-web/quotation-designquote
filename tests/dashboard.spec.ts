@@ -2,25 +2,11 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Dashboard Page', () => {
   test.beforeEach(async ({ page }) => {
-    // Login first (using demo mode if available)
-    await page.goto('/login');
+    // Navigate to dashboard (already authenticated via storage state)
+    await page.goto('/');
 
-    // Check if demo mode checkbox exists
-    const demoCheckbox = page.locator('input[type="checkbox"]').filter({ hasText: /demo/i });
-    const demoCheckboxCount = await demoCheckbox.count();
-
-    if (demoCheckboxCount > 0) {
-      // Use demo mode
-      await page.locator('input[type="email"]').first().fill('admin@example.com');
-      await demoCheckbox.first().check();
-      await page.locator('button:has-text("Login"), button:has-text("Sign In")').first().click();
-    } else {
-      // Try to navigate directly if no auth required
-      await page.goto('/');
-    }
-
-    // Wait for navigation to complete
-    await page.waitForURL(/\/(dashboard)?$/);
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
   });
 
   test('should display dashboard statistics', async ({ page }) => {

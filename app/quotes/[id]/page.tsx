@@ -37,6 +37,7 @@ interface Quote {
   discount: number;
   tax: number;
   grandTotal: number;
+  version: number;
   isApproved: boolean;
   createdAt: string;
   client: {

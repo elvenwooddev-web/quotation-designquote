@@ -202,8 +202,8 @@ export default function Dashboard() {
           <TopDealsTable data={dashboardData.topDeals} period={timePeriod} />
         </div>
 
-        {/* Pending Approvals Section */}
-        {hasPermission(permissions, 'quotes', 'canapprove') && dashboardData.pendingApprovals.length > 0 && (
+        {/* Pending Approvals Section - Always visible for users with approval permissions */}
+        {hasPermission(permissions, 'quotes', 'canapprove') && (
           <div className={`grid grid-cols-1 mt-8 transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Pending Approvals</h3>

@@ -2,20 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Quote Builder Workflow', () => {
   test.beforeEach(async ({ page }) => {
-    // Login first (using demo mode if available)
-    await page.goto('/login');
-
-    // Check if demo mode checkbox exists
-    const demoCheckbox = page.locator('input[type="checkbox"]').filter({ hasText: /demo/i });
-    const demoCheckboxCount = await demoCheckbox.count();
-
-    if (demoCheckboxCount > 0) {
-      // Use demo mode with admin account
-      await page.locator('input[type="email"]').first().fill('admin@example.com');
-      await demoCheckbox.first().check();
-      await page.locator('button:has-text("Login"), button:has-text("Sign In")').first().click();
-      await page.waitForURL(/\/(dashboard)?$/);
-    }
+    // Already authenticated via storage state
   });
 
   test('should navigate to new quote page', async ({ page }) => {

@@ -23,6 +23,77 @@ export const useAuth = () => {
   return context;
 };
 
+// 🔧 DEV MODE: Set to false to re-enable authentication
+const DEV_MODE_BYPASS_AUTH = true;
+
+// Mock admin user for development
+const MOCK_DEV_USER: User = {
+  id: 'dev-admin-id',
+  authuserid: 'dev-auth-id',
+  name: 'Dev Admin',
+  email: 'admin@dev.local',
+  roleid: 'dev-role-id',
+  role: {
+    id: 'dev-role-id',
+    name: 'Admin',
+    description: 'Development admin role',
+    isprotected: true,
+    createdat: new Date().toISOString(),
+    updatedat: new Date().toISOString(),
+  },
+  isactive: true,
+  createdat: new Date().toISOString(),
+  updatedat: new Date().toISOString(),
+};
+
+// Mock full admin permissions for development
+const MOCK_DEV_PERMISSIONS: RolePermission[] = [
+  {
+    id: 'dev-perm-1',
+    roleid: 'dev-role-id',
+    resource: 'categories',
+    cancreate: true,
+    canread: true,
+    canedit: true,
+    candelete: true,
+    canapprove: true,
+    canexport: true,
+  },
+  {
+    id: 'dev-perm-2',
+    roleid: 'dev-role-id',
+    resource: 'products',
+    cancreate: true,
+    canread: true,
+    canedit: true,
+    candelete: true,
+    canapprove: true,
+    canexport: true,
+  },
+  {
+    id: 'dev-perm-3',
+    roleid: 'dev-role-id',
+    resource: 'clients',
+    cancreate: true,
+    canread: true,
+    canedit: true,
+    candelete: true,
+    canapprove: true,
+    canexport: true,
+  },
+  {
+    id: 'dev-perm-4',
+    roleid: 'dev-role-id',
+    resource: 'quotes',
+    cancreate: true,
+    canread: true,
+    canedit: true,
+    candelete: true,
+    canapprove: true,
+    canexport: true,
+  },
+];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [permissions, setPermissions] = useState<RolePermission[]>([]);
@@ -31,10 +102,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // 🔧 DEV MODE: Bypass auth and use mock admin user
+    if (DEV_MODE_BYPASS_AUTH) {
+      console.log('🔧 [DEV MODE] Auth bypassed - using mock admin user');
+      setUser(MOCK_DEV_USER);
+      setPermissions(MOCK_DEV_PERMISSIONS);
+      setLoading(false);
+      return;
+    }
+
     // Timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       if (mounted) {
-        console.warn('[Auth] Session check timed out after 10 seconds');
         setLoading(false);
       }
     }, 10000);
@@ -42,7 +121,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        console.log('[Auth] Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -55,8 +133,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           return;
         }
-
-        console.log('[Auth] Session:', session ? 'Found' : 'None');
 
         if (session?.user) {
           await fetchUserProfile(session.user.id);
@@ -85,7 +161,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[Auth] Auth state changed:', event);
         if (session?.user) {
           await fetchUserProfile(session.user.id);
         } else {
@@ -107,8 +182,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (authUserId: string) => {
     try {
-      console.log('[Auth] Fetching user profile for auth ID:', authUserId);
-
       // Fetch user with role information
       const { data: userProfile, error } = await supabase
         .from('users')
@@ -125,8 +198,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         `)
         .eq('authuserid', authUserId)
         .single();
-
-      console.log('[Auth] User profile response:', { userProfile, error });
 
       if (error) {
         console.error('[Auth] Error fetching user profile:', error);
@@ -153,14 +224,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Use the data as-is since it's already in the correct format
-      console.log('[Auth] Setting user:', userProfile);
       setUser(userProfile as User);
 
       // Fetch permissions for the user's role
       if (userProfile.roleid) {
         await fetchRolePermissions(userProfile.roleid);
       } else {
-        console.warn('[Auth] User has no role assigned');
         setPermissions([]);
       }
     } catch (error) {
@@ -174,7 +243,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchRolePermissions = async (roleId: string) => {
     try {
-      console.log('[Auth] Fetching permissions for role:', roleId);
       const { data: rolePermissions, error } = await supabase
         .from('role_permissions')
         .select('*')
@@ -187,13 +255,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!rolePermissions) {
-        console.warn('[Auth] No permissions found for role');
         setPermissions([]);
         return;
       }
 
       // Use the data as-is since types match database columns
-      console.log('[Auth] Setting permissions:', rolePermissions);
       setPermissions(rolePermissions as RolePermission[]);
     } catch (error) {
       console.error('[Auth] Exception in fetchRolePermissions:', error);
@@ -202,24 +268,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('[Auth] Starting sign in...');
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // 🔧 DEV MODE: Sign in is bypassed
+    if (DEV_MODE_BYPASS_AUTH) {
+      console.log('🔧 [DEV MODE] Sign in bypassed - already using mock admin');
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
-    console.log('[Auth] Sign in response:', { data, error });
 
     if (error) {
       console.error('[Auth] Sign in error:', error);
       throw error;
     }
 
-    console.log('[Auth] Sign in successful, waiting for auth state change...');
     // The user profile will be fetched automatically via the auth state change listener
   };
 
   const signUp = async (email: string, password: string, userData: { name: string; roleId: string }) => {
+    // 🔧 DEV MODE: Sign up is bypassed
+    if (DEV_MODE_BYPASS_AUTH) {
+      console.log('🔧 [DEV MODE] Sign up bypassed - auth is disabled');
+      throw new Error('Sign up is disabled in dev mode');
+    }
+
     // Validate email domain
     if (!email.endsWith('@elvenwood.in')) {
       throw new Error('Only @elvenwood.in email addresses are allowed');
@@ -264,6 +338,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // 🔧 DEV MODE: Just reset to mock user
+    if (DEV_MODE_BYPASS_AUTH) {
+      console.log('🔧 [DEV MODE] Sign out bypassed - keeping mock admin user');
+      return;
+    }
+
     const { error } = await supabase.auth.signOut();
     if (error) {
       throw error;

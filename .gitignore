@@ -43,3 +43,35 @@ next-env.d.ts
 /app/generated/prisma
 
 .vercel
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/playwright/.auth/
+/.playwright-mcp/
+
+# Temporary files and session summaries
+*_SUMMARY.md
+*_REPORT.md
+*_FIX.md
+*_ANALYSIS.md
+*_SETUP.md
+*_IMPLEMENTATION.md
+*_UPDATE.md
+*_ENHANCEMENTS.md
+*_BLOCKER.md
+*_REVERT.md
+*_BYPASS.md
+*_RESULTS.md
+*_INDEX.md
+
+# Backup files
+*.backup
+*.bak
+*~
+*.tmp
+
+# Temporary test scripts
+scripts/test-*.sh
+scripts/setup-*.js

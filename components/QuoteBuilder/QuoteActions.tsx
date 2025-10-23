@@ -4,19 +4,18 @@ import React, { useState } from 'react';
 import { Save, Send, FileDown, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuoteStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth-context';
 import { calculateQuoteTotals, calculateLineTotal } from '@/lib/calculations';
-import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 
 export function QuoteActions() {
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const { user } = useAuth();
   const quoteId = useQuoteStore((state) => state.quoteId);
   const title = useQuoteStore((state) => state.title);
   const clientId = useQuoteStore((state) => state.clientId);
-  const templateId = useQuoteStore((state) => state.templateId);
   const discountMode = useQuoteStore((state) => state.discountMode);
   const overallDiscount = useQuoteStore((state) => state.overallDiscount);
   const taxRate = useQuoteStore((state) => state.taxRate);
@@ -38,7 +37,7 @@ export function QuoteActions() {
     if (savedQuoteId) {
       setHasUnsavedChanges(true);
     }
-  }, [title, clientId, templateId, discountMode, overallDiscount, taxRate, items, policies]);
+  }, [title, clientId, discountMode, overallDiscount, taxRate, items, policies, savedQuoteId]);
 
   const handleSaveDraft = async () => {
     if (!title.trim()) {
@@ -54,13 +53,27 @@ export function QuoteActions() {
     setIsSaving(true);
 
     try {
+      // Determine the appropriate status based on user role
+      // Only set status when creating a new quote
+      const determineQuoteStatus = () => {
+        if (!savedQuoteId) {
+          // New quote - check user role
+          if (user?.role?.name === 'Sales Executive') {
+            return 'PENDING_APPROVAL';
+          }
+          return 'DRAFT';
+        }
+        // Existing quote - don't change status on update
+        return undefined;
+      };
+
       const quoteData = {
         title,
         clientId,
-        templateId,
         discountMode,
         overallDiscount,
         taxRate,
+        status: determineQuoteStatus(),
         items: items.map((item) => ({
           productId: item.productId,
           description: item.description,
@@ -114,7 +127,8 @@ export function QuoteActions() {
       alert('Please update the quote first to save your changes before previewing');
       return;
     }
-    setShowPreview(true);
+    // Open PDF in new tab for preview
+    window.open(`/api/quotes/${savedQuoteId}/pdf`, '_blank');
   };
 
   const handleExportPDF = async () => {
@@ -161,6 +175,7 @@ export function QuoteActions() {
           disabled={isSaving}
           variant="outline"
           className="flex-1"
+          data-testid="save-draft-button"
         >
           <Save className="h-4 w-4 mr-2" />
           {isSaving
@@ -174,6 +189,7 @@ export function QuoteActions() {
           variant="outline"
           className="flex-1"
           title={hasUnsavedChanges ? 'Update quote first to preview' : ''}
+          data-testid="preview-button"
         >
           <Eye className="h-4 w-4 mr-2" />
           Preview
@@ -184,6 +200,7 @@ export function QuoteActions() {
           disabled={isExporting || !savedQuoteId || hasUnsavedChanges}
           className="flex-1"
           title={hasUnsavedChanges ? 'Update quote first to export PDF' : ''}
+          data-testid="export-pdf-button"
         >
           <FileDown className="h-4 w-4 mr-2" />
           {isExporting ? 'Exporting...' : 'Export PDF'}
@@ -194,14 +211,6 @@ export function QuoteActions() {
           Send Quote
         </Button>
       </div>
-
-      {/* PDF Preview Modal */}
-      <PDFPreviewModal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        quoteId={savedQuoteId || undefined}
-        title="Quote Preview"
-      />
     </>
   );
 }

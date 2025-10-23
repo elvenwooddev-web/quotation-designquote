@@ -1,51 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuoteStore } from '@/lib/store';
-import { Client, PDFTemplate } from '@/lib/types';
+import { Client } from '@/lib/types';
 import { ClientDialog } from './ClientDialog';
-import { TemplateDisplay } from './TemplateDisplay';
-import { TemplateSelectorDialog } from './TemplateSelectorDialog';
-import { getDefaultTemplate } from '@/lib/get-default-template';
 
 export function QuoteDetails() {
   const [clients, setClients] = useState<Client[]>([]);
   const [showClientDialog, setShowClientDialog] = useState(false);
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   const title = useQuoteStore((state) => state.title);
   const clientId = useQuoteStore((state) => state.clientId);
-  const templateId = useQuoteStore((state) => state.templateId);
-  const template = useQuoteStore((state) => state.template);
   const setTitle = useQuoteStore((state) => state.setTitle);
   const setClient = useQuoteStore((state) => state.setClient);
-  const setTemplate = useQuoteStore((state) => state.setTemplate);
 
   useEffect(() => {
     fetchClients();
-    loadDefaultTemplate();
   }, []);
-
-  const loadDefaultTemplate = async () => {
-    // Only load default template if no template is already set
-    if (!templateId && !template) {
-      setLoadingTemplate(true);
-      try {
-        const defaultTemplate = await getDefaultTemplate();
-        setTemplate(defaultTemplate.id, defaultTemplate);
-      } catch (error) {
-        console.error('Failed to load default template:', error);
-      } finally {
-        setLoadingTemplate(false);
-      }
-    }
-  };
 
   const fetchClients = async () => {
     try {
@@ -72,10 +46,6 @@ export function QuoteDetails() {
     setShowClientDialog(false);
   };
 
-  const handleTemplateSelected = (selectedTemplate: PDFTemplate) => {
-    setTemplate(selectedTemplate.id, selectedTemplate);
-  };
-
   return (
     <>
       <Card>
@@ -97,6 +67,7 @@ export function QuoteDetails() {
               placeholder="Modular Kitchen Quote"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              data-testid="quote-title-input"
             />
           </div>
 
@@ -109,6 +80,7 @@ export function QuoteDetails() {
                 value={clientId || ''}
                 onChange={(e) => handleClientChange(e.target.value)}
                 className="flex-1"
+                data-testid="client-select"
               >
                 <option value="">Select Client</option>
                 {clients.map((client) => (
@@ -120,17 +92,6 @@ export function QuoteDetails() {
               </Select>
             </div>
           </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              PDF Template
-            </label>
-            <TemplateDisplay
-              template={template}
-              onChangeTemplate={() => setShowTemplateDialog(true)}
-              loading={loadingTemplate}
-            />
-          </div>
         </CardContent>
       </Card>
 
@@ -139,16 +100,6 @@ export function QuoteDetails() {
         onOpenChange={setShowClientDialog}
         onClientCreated={handleClientCreated}
       />
-
-      <TemplateSelectorDialog
-        open={showTemplateDialog}
-        onOpenChange={setShowTemplateDialog}
-        onSelectTemplate={handleTemplateSelected}
-        currentTemplateId={templateId}
-      />
     </>
   );
 }
-
-
-

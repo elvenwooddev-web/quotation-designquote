@@ -72,41 +72,40 @@ export function QuotationItems() {
           </div>
         ) : (
           <div className="space-y-6">
-            {Object.entries(groupedItems).map(([categoryName, categoryItems]) => (
+            {Object.entries(groupedItems).map(([categoryName, categoryItems]) => {
+              const categorySubtotal = categoryItems.reduce(
+                (sum, item) =>
+                  sum +
+                  calculateLineTotal(
+                    item.quantity,
+                    item.rate,
+                    showLineDiscount ? item.discount : 0
+                  ),
+                0
+              );
+
+              return (
               <div key={categoryName}>
                 {/* Category Header */}
-                <div className="bg-blue-50 px-4 py-2 rounded-t-md border border-b-0">
-                  <h3 className="font-semibold text-blue-900">{categoryName}</h3>
-                  <div className="flex justify-end mt-2">
-                    <div className="text-sm font-semibold text-blue-900">
-                      {formatCurrency(
-                        categoryItems.reduce(
-                          (sum, item) =>
-                            sum +
-                            calculateLineTotal(
-                              item.quantity,
-                              item.rate,
-                              showLineDiscount ? item.discount : 0
-                            ),
-                          0
-                        )
-                      )}
-                    </div>
+                <div className="bg-blue-50 px-4 py-3 rounded-t-md border border-b-0 border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-blue-900 text-lg">{categoryName}</h3>
                   </div>
                 </div>
 
                 {/* Items */}
-                {categoryItems.map((item) => {
+                {categoryItems.map((item, index) => {
                   const lineTotal = calculateLineTotal(
                     item.quantity,
                     item.rate,
                     showLineDiscount ? item.discount : 0
                   );
+                  const isLastItem = index === categoryItems.length - 1;
 
                   return (
                     <div
                       key={item.id}
-                      className="border border-t-0 p-4 hover:bg-gray-50"
+                      className="border border-t-0 border-blue-200 p-4 hover:bg-gray-50"
                     >
                       <div className="flex items-start gap-4">
                         {/* Product Image */}
@@ -128,33 +127,52 @@ export function QuotationItems() {
                             <h4 className="font-medium text-gray-900">
                               {item.product?.name}
                             </h4>
-                            <p className="text-sm text-gray-500">
-                              {item.product?.unit || 'pcs'}
-                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                {item.product?.category?.name || 'Uncategorized'}
+                              </span>
+                              <p className="text-sm text-gray-500">
+                                {item.product?.unit || 'pcs'}
+                              </p>
+                            </div>
+                            {item.dimensions && Object.keys(item.dimensions).length > 0 && (
+                              <div className="mt-2 text-xs text-gray-600 bg-blue-50 px-2 py-1 rounded inline-block">
+                                {item.dimensions.length && item.dimensions.width ? (
+                                  <>📐 L: {item.dimensions.length} ft × W: {item.dimensions.width} ft = {(item.dimensions.length * item.dimensions.width).toFixed(2)} sq.ft</>
+                                ) : (
+                                  <>Dimensions: {Object.entries(item.dimensions)
+                                    .map(([key, value]) => `${key}: ${value}`)
+                                    .join(', ')}</>
+                                )}
+                              </div>
+                            )}
                           </div>
 
-                          <div>
-                            <label className="text-xs font-medium text-gray-600 block mb-1">
-                              Description
-                            </label>
-                            <Input
-                              type="text"
-                              value={item.description || ''}
-                              onChange={(e) =>
-                                updateItem(item.id, { description: e.target.value })
-                              }
-                              placeholder="Add description..."
-                              className="text-sm"
-                            />
-                          </div>
+                          {/* All Input Fields in Single Grid */}
+                          <div className="grid grid-cols-12 gap-2 items-end">
+                            {/* Description Field */}
+                            <div className="col-span-2">
+                              <label className="text-xs font-medium text-gray-600 block mb-1">
+                                Description
+                              </label>
+                              <Input
+                                type="text"
+                                value={item.description || ''}
+                                onChange={(e) =>
+                                  updateItem(item.id, { description: e.target.value })
+                                }
+                                placeholder="Add description..."
+                                className="text-sm h-9"
+                              />
+                            </div>
 
-                          {/* Input Fields */}
-                          <div className="grid grid-cols-6 gap-3">
-                            {isAreaUnit(item.product?.unit) && (
+                            {/* Conditional Fields for Area Units */}
+                            {isAreaUnit(item.product?.unit) ? (
                               <>
-                                <div>
+                                {/* Length Field */}
+                                <div className="col-span-1">
                                   <label className="text-xs font-medium text-gray-600 block mb-1">
-                                    Length (ft)
+                                    L (ft)
                                   </label>
                                   <Input
                                     type="number"
@@ -165,12 +183,15 @@ export function QuotationItems() {
                                       handleDimensionChange(item.id, 'length', e.target.value)
                                     }
                                     placeholder="0"
-                                    className="text-sm"
+                                    className="text-sm h-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    data-testid="item-length-input"
                                   />
                                 </div>
-                                <div>
+
+                                {/* Width Field */}
+                                <div className="col-span-1">
                                   <label className="text-xs font-medium text-gray-600 block mb-1">
-                                    Width (ft)
+                                    W (ft)
                                   </label>
                                   <Input
                                     type="number"
@@ -181,33 +202,53 @@ export function QuotationItems() {
                                       handleDimensionChange(item.id, 'width', e.target.value)
                                     }
                                     placeholder="0"
-                                    className="text-sm"
+                                    className="text-sm h-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    data-testid="item-width-input"
+                                  />
+                                </div>
+
+                                {/* Quantity Field (Auto-calculated) */}
+                                <div className="col-span-2">
+                                  <label className="text-xs font-medium text-gray-600 block mb-1">
+                                    Quantity
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={item.quantity || ''}
+                                    className="text-sm h-9 bg-gray-50"
+                                    readOnly
+                                    title="Auto-calculated from Length × Width"
+                                    data-testid="item-quantity-input"
                                   />
                                 </div>
                               </>
+                            ) : (
+                              /* Quantity Field (Manual Entry) - Takes space of L, W, and Qty */
+                              <div className="col-span-4">
+                                <label className="text-xs font-medium text-gray-600 block mb-1">
+                                  Quantity
+                                </label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={item.quantity || ''}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    updateItem(item.id, {
+                                      quantity: value === '' ? 0 : parseFloat(value),
+                                    });
+                                  }}
+                                  className="text-sm h-9"
+                                  data-testid="item-quantity-input"
+                                />
+                              </div>
                             )}
-                            <div>
-                              <label className="text-xs font-medium text-gray-600 block mb-1">
-                                Quantity
-                              </label>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={item.quantity || ''}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  updateItem(item.id, {
-                                    quantity: value === '' ? 0 : parseFloat(value),
-                                  });
-                                }}
-                                className="text-sm"
-                                readOnly={isAreaUnit(item.product?.unit)}
-                                title={isAreaUnit(item.product?.unit) ? 'Auto-calculated from Length × Width' : ''}
-                              />
-                            </div>
 
-                            <div>
+                            {/* Rate Field */}
+                            <div className="col-span-3">
                               <label className="text-xs font-medium text-gray-600 block mb-1">
                                 Rate (₹)
                               </label>
@@ -222,14 +263,16 @@ export function QuotationItems() {
                                     rate: value === '' ? 0 : parseFloat(value),
                                   });
                                 }}
-                                className="text-sm"
+                                className="text-sm h-9 font-medium"
+                                data-testid="item-rate-input"
                               />
                             </div>
 
-                            {showLineDiscount && (
-                              <div>
+                            {/* Discount Field (Conditional) */}
+                            {showLineDiscount ? (
+                              <div className="col-span-1">
                                 <label className="text-xs font-medium text-gray-600 block mb-1">
-                                  Discount (%)
+                                  Disc (%)
                                 </label>
                                 <Input
                                   type="number"
@@ -243,16 +286,18 @@ export function QuotationItems() {
                                       discount: value === '' ? 0 : parseFloat(value),
                                     });
                                   }}
-                                  className="text-sm"
+                                  className="text-sm h-9"
+                                  data-testid="item-discount-input"
                                 />
                               </div>
-                            )}
+                            ) : null}
 
-                            <div>
+                            {/* Line Total Field */}
+                            <div className={showLineDiscount ? "col-span-2" : "col-span-3"}>
                               <label className="text-xs font-medium text-gray-600 block mb-1">
                                 Line Total (₹)
                               </label>
-                              <div className="h-9 flex items-center px-3 bg-gray-50 rounded-md border border-input text-sm font-semibold">
+                              <div className="h-9 flex items-center px-3 bg-gray-50 rounded-md border border-gray-200 text-sm font-semibold">
                                 {formatCurrency(lineTotal, '')}
                               </div>
                             </div>
@@ -265,6 +310,8 @@ export function QuotationItems() {
                           size="icon"
                           onClick={() => removeItem(item.id)}
                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          data-testid="remove-item-button"
+                          aria-label="Remove item"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -272,8 +319,18 @@ export function QuotationItems() {
                     </div>
                   );
                 })}
+
+                {/* Category Footer with Subtotal */}
+                <div className="bg-gray-50 px-4 py-3 rounded-b-md border-x border-b border-blue-200">
+                  <div className="flex justify-end">
+                    <div className="text-sm font-semibold text-gray-700">
+                      Category Subtotal: <span className="text-blue-700 text-base ml-2">{formatCurrency(categorySubtotal)}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

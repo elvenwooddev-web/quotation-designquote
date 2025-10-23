@@ -9,6 +9,7 @@ import { Edit, Trash2 } from 'lucide-react';
 export function UserManagementTable() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -27,24 +28,40 @@ export function UserManagementTable() {
   };
 
   const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
+    // Optimistic update - immediately update UI
+    const newStatus = !currentStatus;
+    setUsers(users.map(user =>
+      user.id === userId ? { ...user, isactive: newStatus } : user
+    ));
+    setUpdatingUserId(userId);
+
     try {
       const response = await fetch('/api/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: userId,
-          isActive: !currentStatus,
+          isactive: newStatus,
         }),
       });
 
-      if (response.ok) {
-        const updatedUser = await response.json();
-        setUsers(users.map(user =>
-          user.id === userId ? updatedUser : user
-        ));
+      if (!response.ok) {
+        throw new Error('Failed to update user status');
       }
+
+      const updatedUser = await response.json();
+      setUsers(users.map(user =>
+        user.id === userId ? updatedUser : user
+      ));
     } catch (error) {
       console.error('Error updating user status:', error);
+      // Rollback optimistic update on error
+      setUsers(users.map(user =>
+        user.id === userId ? { ...user, isactive: currentStatus } : user
+      ));
+      alert('Failed to update user status. Please try again.');
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
@@ -126,12 +143,21 @@ export function UserManagementTable() {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
-                  <Switch
-                    checked={user.isActive}
-                    onCheckedChange={() => handleStatusToggle(user.id, user.isActive)}
-                  />
-                  <span className="ml-2 text-sm text-gray-600">
-                    {user.isActive ? 'Active' : 'Inactive'}
+                  <div className="relative">
+                    <Switch
+                      checked={user.isactive}
+                      onCheckedChange={() => handleStatusToggle(user.id, user.isactive)}
+                      disabled={updatingUserId === user.id}
+                      className={updatingUserId === user.id ? 'opacity-50 cursor-wait' : ''}
+                    />
+                    {updatingUserId === user.id && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
+                      </div>
+                    )}
+                  </div>
+                  <span className={`ml-2 text-sm ${updatingUserId === user.id ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {user.isactive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
               </td>
@@ -140,7 +166,8 @@ export function UserManagementTable() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {/* TODO: Edit user */}}
+                    onClick={() => alert('User editing feature coming soon!')}
+                    title="Edit user (coming soon)"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { generateQuotePDF } from '@/lib/pdf-generator';
-import { PDFTemplate } from '@/lib/types';
 
 export async function GET(
   request: NextRequest,
@@ -48,153 +47,137 @@ export async function GET(
       description: termsData.value,
       isActive: true,
       order: 1,
+      id: 'terms-1',
+      quoteId: quote.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }] : [];
 
-    // Map database columns to frontend format
+    // Map database fields to frontend types (camelCase)
     const mappedQuote = {
-      ...quote,
+      id: quote.id,
+      title: quote.title,
       quoteNumber: quote.quotenumber,
       clientId: quote.clientid,
       discountMode: quote.discountmode,
       overallDiscount: quote.overalldiscount,
       taxRate: quote.taxrate,
+      subtotal: quote.subtotal,
+      discount: quote.discount,
+      tax: quote.tax,
       grandTotal: quote.grandtotal,
+      status: quote.status,
+      version: quote.version || 1,
+      isApproved: quote.isapproved,
+      approvedBy: quote.approvedby,
+      approvedAt: quote.approvedat,
+      approvalNotes: quote.approvalnotes,
       createdAt: quote.createdat,
       updatedAt: quote.updatedat,
-      items: quote.items?.map((item: any) => ({
-        ...item,
+      client: quote.client ? {
+        id: quote.client.id,
+        name: quote.client.name,
+        email: quote.client.email,
+        phone: quote.client.phone,
+        company: quote.client.company,
+        address: quote.client.address,
+        isActive: quote.client.isactive,
+        createdAt: quote.client.createdat,
+        updatedAt: quote.client.updatedat,
+      } : null,
+      items: quote.items.map((item: any) => ({
+        id: item.id,
         quoteId: item.quoteid,
         productId: item.productid,
+        description: item.description,
+        quantity: item.quantity,
+        rate: item.rate,
+        discount: item.discount,
         lineTotal: item.linetotal,
+        order: item.order,
+        dimensions: item.dimensions,
         createdAt: item.createdat,
         updatedAt: item.updatedat,
-        product: item.product ? {
-          ...item.product,
-          baseRate: item.product.baserate,
+        product: {
+          id: item.product.id,
+          itemCode: item.product.itemcode,
+          name: item.product.name,
+          description: item.product.description,
           categoryId: item.product.categoryid,
+          baseRate: item.product.baserate,
           imageUrl: item.product.imageurl,
+          isActive: item.product.isactive,
           createdAt: item.product.createdat,
           updatedAt: item.product.updatedat,
-        } : null,
-      })) || [],
-      policies: policies,
+          category: item.product.category ? {
+            id: item.product.category.id,
+            name: item.product.category.name,
+            description: item.product.category.description,
+            isActive: item.product.category.isactive,
+            parentId: item.product.category.parentid,
+            createdAt: item.product.category.createdat,
+            updatedAt: item.product.category.updatedat,
+          } : null,
+        },
+      })),
+      policies: policies
     };
 
-    // Load template for the quote (if templateid is set)
-    let template: PDFTemplate | undefined;
-
-    if (quote.templateid) {
-      const { data: templateData, error: templateError } = await supabase
-        .from('pdf_templates')
-        .select('*')
-        .eq('id', quote.templateid)
-        .single();
-
-      if (!templateError && templateData) {
-        // Map database columns to frontend format
-        template = {
-          id: templateData.id,
-          name: templateData.name,
-          description: templateData.description,
-          category: templateData.category,
-          isDefault: templateData.isdefault,
-          isPublic: templateData.ispublic,
-          templateJson: templateData.template_json,
-          thumbnail: templateData.thumbnail,
-          createdBy: templateData.createdby,
-          createdAt: templateData.createdat,
-          updatedAt: templateData.updatedat,
-          version: templateData.version,
-        };
-      } else {
-        console.warn(`Template ${quote.templateid} not found, using default template`);
-      }
-    } else {
-      // No template specified, try to load the default template from database
-      const { data: defaultTemplateData, error: defaultTemplateError } = await supabase
-        .from('pdf_templates')
-        .select('*')
-        .eq('isdefault', true)
-        .eq('ispublic', true)
-        .limit(1)
-        .single();
-
-      if (!defaultTemplateError && defaultTemplateData) {
-        template = {
-          id: defaultTemplateData.id,
-          name: defaultTemplateData.name,
-          description: defaultTemplateData.description,
-          category: defaultTemplateData.category,
-          isDefault: defaultTemplateData.isdefault,
-          isPublic: defaultTemplateData.ispublic,
-          templateJson: defaultTemplateData.template_json,
-          thumbnail: defaultTemplateData.thumbnail,
-          createdBy: defaultTemplateData.createdby,
-          createdAt: defaultTemplateData.createdat,
-          updatedAt: defaultTemplateData.updatedat,
-          version: defaultTemplateData.version,
-        };
-      }
-      // If no default template in DB, generateQuotePDF will use the built-in default
-    }
-
-    // Handle status and revision tracking
-    const currentVersion = quote.version || 1;
-    const currentStatus = quote.status;
-    let newStatus = currentStatus;
-    let newVersion = currentVersion;
-
-    // Auto-update status on first export (from DRAFT to SENT)
-    if (currentStatus === 'DRAFT') {
-      newStatus = 'SENT';
-      newVersion = 1; // First version when sending
-    } else if (currentStatus === 'SENT' || currentStatus === 'ACCEPTED') {
-      // Increment version for subsequent exports
-      newVersion = currentVersion + 1;
-    }
-
-    // Update quote with new status and version
-    if (newStatus !== currentStatus || newVersion !== currentVersion) {
-      await supabase
+    // Track PDF export and update version if status is DRAFT
+    if (quote.status === 'DRAFT') {
+      // This is the first export, set status to SENT
+      const { error: updateError } = await supabase
         .from('quotes')
         .update({
-          status: newStatus,
-          version: newVersion,
-          updatedat: new Date().toISOString(),
+          status: 'SENT',
+          updatedat: new Date().toISOString()
         })
         .eq('id', id);
+
+      if (updateError) {
+        console.error('Failed to update quote status:', updateError);
+      }
+    } else {
+      // Quote already sent, increment version for subsequent exports
+      const newVersion = (quote.version || 1) + 1;
+      const { error: versionError } = await supabase
+        .from('quotes')
+        .update({
+          version: newVersion,
+          updatedat: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (versionError) {
+        console.error('Failed to update quote version:', versionError);
+      }
     }
 
-    // Create revision history entry
-    await supabase
+    // Record the export in quote_revisions table
+    const { error: revisionError } = await supabase
       .from('quote_revisions')
       .insert({
-        quoteid: id,
-        version: newVersion,
-        status: newStatus,
-        exported_by: 'system', // TODO: Get from auth context
+        quoteid: quote.id,
+        version: quote.version || 1,
+        status: quote.status === 'DRAFT' ? 'SENT' : quote.status,
+        exported_by: 'system', // In a real app, this would be the current user ID
         exported_at: new Date().toISOString(),
-        changes: {
-          previous_status: currentStatus,
-          new_status: newStatus,
-          previous_version: currentVersion,
-          new_version: newVersion,
-        },
-        notes: currentStatus === 'DRAFT' ? 'Initial quote export' : 'Quote re-exported',
+        changes: quote.status === 'DRAFT' ? 'Initial export - Status changed to SENT' : 'Re-exported',
+        notes: null
       });
 
-    // Generate PDF with template
-    const pdfBlob = await generateQuotePDF(mappedQuote, template);
+    if (revisionError) {
+      console.error('Failed to record quote revision:', revisionError);
+    }
 
-    // Convert blob to buffer for Next.js response
-    const buffer = Buffer.from(await pdfBlob.arrayBuffer());
+    // Generate PDF without template
+    const pdfBlob = await generateQuotePDF(mappedQuote);
 
-    // Return PDF as downloadable file with version in filename
-    const filename = `quote-${quote.quotenumber || id}-v${newVersion}.pdf`;
-    return new NextResponse(buffer, {
+    // Return PDF as response
+    return new NextResponse(pdfBlob, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename="quote-${quote.quotenumber}.pdf"`,
       },
     });
   } catch (error) {

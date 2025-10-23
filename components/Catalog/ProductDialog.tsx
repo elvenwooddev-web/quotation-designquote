@@ -217,17 +217,19 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSave 
           )}
           
           <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
+              data-testid="cancel-product-button"
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={loading}
+              data-testid="save-product-button"
             >
               {loading ? 'Saving...' : 'Save to Catalog'}
             </Button>
