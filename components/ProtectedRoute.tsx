@@ -11,7 +11,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [showTimeout, setShowTimeout] = useState(false);
 
   // Public routes that don't need authentication
-  const publicRoutes = ['/login'];
+  const publicRoutes = ['/login', '/forgot-password', '/reset-password'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // Timeout for loading state
