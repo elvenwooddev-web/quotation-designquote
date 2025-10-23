@@ -431,7 +431,7 @@ function generateSamplePolicies(): PolicyClause[] {
       type: 'CUSTOM' as PolicyType,
       title: 'Delivery Information',
       description:
-        'Estimated delivery time: 4-6 weeks from order confirmation. Installation service includes delivery, assembly, and setup of all items. Delivery is free for orders over $10,000 within the metro area.',
+        'Estimated delivery time: 4-6 weeks from order confirmation. Installation service includes delivery, assembly, and setup of all items. Delivery is free for orders over ₹10,00,000 within the metro area.',
       isActive: true,
       order: 3,
       createdAt: new Date().toISOString(),
