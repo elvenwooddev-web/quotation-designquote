@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -117,19 +118,27 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Remember Me */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              checked={rememberMe}
-              onCheckedChange={setRememberMe}
-              id="remember-me"
-            />
-            <label
-              htmlFor="remember-me"
-              className="text-sm text-gray-700 cursor-pointer select-none"
+          {/* Remember Me & Forgot Password */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                checked={rememberMe}
+                onCheckedChange={setRememberMe}
+                id="remember-me"
+              />
+              <label
+                htmlFor="remember-me"
+                className="text-sm text-gray-700 cursor-pointer select-none"
+              >
+                Remember me
+              </label>
+            </div>
+            <Link
+              href="/forgot-password"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              Remember me
-            </label>
+              Forgot password?
+            </Link>
           </div>
 
           {/* Error Message */}
