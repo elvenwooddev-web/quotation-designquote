@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -39,6 +39,11 @@ export default function PendingApprovals({
     setSelectedQuote(quoteId);
     setActionType(action);
     setShowDialog(true);
+  };
+
+  const handlePreview = (quoteId: string) => {
+    // Open the quote PDF in a new tab
+    window.open(`/api/quotes/${quoteId}/pdf`, '_blank');
   };
 
   const confirmAction = async () => {
@@ -129,6 +134,16 @@ export default function PendingApprovals({
                 <td className="py-3 px-4">{formatDate(approval.createdAt)}</td>
                 <td className="py-3 px-4">
                   <div className="flex items-center justify-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => handlePreview(approval.id)}
+                      title="Preview Quote PDF"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Preview
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
