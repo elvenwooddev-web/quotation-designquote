@@ -18,7 +18,7 @@ interface CategorySidebarProps {
 export function CategorySidebar({ categories, selectedCategory, onSelectCategory, onCategoryAdded, onCategoryUpdated, onCategoryDeleted }: CategorySidebarProps) {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const totalItems = categories.reduce((sum, cat) => sum + (cat.itemCount || 0), 0);
+  const totalItems = 0; // TODO: Add item count when available
   
   const handleCategoryCreated = (category: Category) => {
     if (editingCategory) {
@@ -119,7 +119,7 @@ export function CategorySidebar({ categories, selectedCategory, onSelectCategory
             >
               <span className="font-medium">{category.name}</span>
               <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-                {category.itemCount || 0}
+                {0}
               </span>
             </button>
             <div className="flex space-x-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -14,6 +14,7 @@ export function QuoteActions() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isRequestingApproval, setIsRequestingApproval] = useState(false);
   const [quoteStatus, setQuoteStatus] = useState<string>('DRAFT');
+  const [isEditingExistingQuote, setIsEditingExistingQuote] = useState(false);
 
   const { user, permissions } = useAuth();
   const quoteId = useQuoteStore((state) => state.quoteId);
@@ -29,13 +30,15 @@ export function QuoteActions() {
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(quoteId || null);
 
   // Check if user is Admin or Sales Head
-  const isAdminOrSalesHead = user?.role?.name === 'Admin' || user?.role?.name === 'Sales Head';
-  const canApprove = hasPermission(permissions, 'quotes', 'canapprove');
+  const isAdminOrSalesHead = user?.role === 'Admin' || user?.role === 'Sales Head';
+  const canApprove = hasPermission(permissions, 'quotes', 'canApprove');
 
   // Update savedQuoteId when quoteId changes from store
   React.useEffect(() => {
     if (quoteId) {
       setSavedQuoteId(quoteId);
+      // This is an existing quote being edited
+      setIsEditingExistingQuote(true);
       // Fetch quote status when loading existing quote
       fetchQuoteStatus(quoteId);
     }
@@ -113,7 +116,12 @@ export function QuoteActions() {
         setSavedQuoteId(quote.id);
         setQuoteStatus(quote.status || 'DRAFT');
         setHasUnsavedChanges(false); // Clear unsaved changes flag after successful save
-        alert(isUpdate ? 'Quote updated successfully! Revision history has been recorded.' : 'Quote saved as draft successfully!');
+        // Only show "updated" message if editing existing quote, not after saving new draft
+        if (isEditingExistingQuote) {
+          alert('Quote updated successfully! Revision history has been recorded.');
+        } else {
+          alert('Quote saved as draft successfully!');
+        }
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to save quote');
@@ -215,8 +223,10 @@ export function QuoteActions() {
 
   // Determine which buttons to show based on role and status
   const showRequestApproval = !isAdminOrSalesHead && savedQuoteId && quoteStatus === 'DRAFT';
-  const showPreviewExport = isAdminOrSalesHead || quoteStatus === 'SENT' || quoteStatus === 'ACCEPTED';
-  const showSendQuote = isAdminOrSalesHead;
+  // Preview and Export only available for approved/sent/accepted quotes (not for DRAFT or PENDING_APPROVAL)
+  const showPreviewExport = quoteStatus === 'SENT' || quoteStatus === 'ACCEPTED' || quoteStatus === 'REJECTED';
+  // Send Quote button should be shown to admins/sales heads when quote is ready to be sent
+  const showSendQuote = isAdminOrSalesHead && savedQuoteId;
 
   return (
     <>
@@ -231,8 +241,8 @@ export function QuoteActions() {
         >
           <Save className="h-4 w-4 mr-2" />
           {isSaving
-            ? (savedQuoteId ? 'Updating...' : 'Saving...')
-            : (savedQuoteId ? 'Update Quote' : 'Save Draft')}
+            ? (isEditingExistingQuote ? 'Updating...' : 'Saving...')
+            : (isEditingExistingQuote ? 'Update Quote' : 'Save Draft')}
         </Button>
 
         {/* Request Approval Button - For non-admins with DRAFT quotes */}
@@ -304,11 +314,21 @@ export function QuoteActions() {
             quoteStatus === 'REJECTED' ? 'text-red-600' :
             'text-gray-700'
           }`}>{quoteStatus}</span>
-          {quoteStatus === 'PENDING_APPROVAL' && !isAdminOrSalesHead && (
-            <span className="block mt-1 text-xs">Waiting for Admin/Sales Head approval</span>
+          {quoteStatus === 'DRAFT' && (
+            <span className="block mt-1 text-xs">Save and request approval to enable PDF export</span>
+          )}
+          {quoteStatus === 'PENDING_APPROVAL' && (
+            <span className="block mt-1 text-xs">
+              {!isAdminOrSalesHead
+                ? 'Waiting for Admin/Sales Head approval. PDF export will be enabled after approval.'
+                : 'Quote pending approval. PDF export will be enabled after approval.'}
+            </span>
           )}
           {quoteStatus === 'SENT' && !isAdminOrSalesHead && (
             <span className="block mt-1 text-xs">Approved! You can now edit and download the quote</span>
+          )}
+          {quoteStatus === 'REJECTED' && (
+            <span className="block mt-1 text-xs">Quote was rejected. You can still export the PDF or make changes and request approval again.</span>
           )}
         </div>
       )}

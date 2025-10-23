@@ -41,7 +41,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSave 
       setFormData({
         name: product.name || '',
         description: product.description || '',
-        unit: product.unit || '',
+        unit: '',
         baseRate: product.baseRate || 0,
         categoryId: product.categoryId || '',
         imageUrl: product.imageUrl || '',

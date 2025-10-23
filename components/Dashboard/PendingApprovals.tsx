@@ -42,8 +42,8 @@ export default function PendingApprovals({
   };
 
   const handlePreview = (quoteId: string) => {
-    // Open the quote PDF in a new tab
-    window.open(`/api/quotes/${quoteId}/pdf`, '_blank');
+    // Navigate to quote details page for preview (since PDF is not available for pending quotes)
+    window.open(`/quotes/${quoteId}`, '_blank');
   };
 
   const confirmAction = async () => {

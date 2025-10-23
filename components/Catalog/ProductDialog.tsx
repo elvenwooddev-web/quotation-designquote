@@ -43,7 +43,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, onSave 
         itemCode: product.itemCode || '',
         name: product.name || '',
         description: product.description || '',
-        unit: product.unit || '',
+        unit: '',
         baseRate: product.baseRate || 0,
         categoryId: product.categoryId || '',
         imageUrl: product.imageUrl || '',

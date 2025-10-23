@@ -4,13 +4,13 @@ import { RolePermission, PermissionResource } from './types';
  * Check if user has permission for a specific action on a resource
  * @param permissions - Array of role permissions from auth context
  * @param resource - The resource to check (categories, products, clients, quotes)
- * @param action - The action to check (cancreate, canedit, candelete, canapprove, canexport, canread)
+ * @param action - The action to check (canCreate, canEdit, canDelete, canApprove, canExport, canRead)
  * @returns boolean indicating if user has permission
  */
 export function hasPermission(
   permissions: RolePermission[],
   resource: PermissionResource,
-  action: 'cancreate' | 'canedit' | 'candelete' | 'canapprove' | 'canexport' | 'canread'
+  action: 'canCreate' | 'canEdit' | 'canDelete' | 'canApprove' | 'canExport' | 'canRead'
 ): boolean {
   if (!permissions || permissions.length === 0) {
     return false; // No permissions loaded
@@ -44,11 +44,11 @@ export function hasAnyPermission(
   }
 
   return (
-    permission.cancreate ||
-    permission.canedit ||
-    permission.candelete ||
-    permission.canapprove ||
-    permission.canexport ||
-    permission.canread
+    permission.canCreate ||
+    permission.canEdit ||
+    permission.canDelete ||
+    permission.canApprove ||
+    permission.canExport ||
+    permission.canRead
   );
 }

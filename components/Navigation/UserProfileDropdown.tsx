@@ -51,17 +51,17 @@ export function UserProfileDropdown({ user }: UserProfileDropdownProps) {
                 <p className="text-sm font-medium text-gray-900">{user.name}</p>
                 <p className="text-xs text-gray-500">{user.email}</p>
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-1 ${
-                  user.role?.name === 'Admin'
+                  user.role === 'Admin'
                     ? 'bg-red-100 text-red-800'
-                    : user.role?.name === 'Sales Head'
+                    : user.role === 'Sales Head'
                     ? 'bg-purple-100 text-purple-800'
-                    : user.role?.name === 'Sales Executive'
+                    : user.role === 'Sales Executive'
                     ? 'bg-indigo-100 text-indigo-800'
-                    : user.role?.name === 'Sales'
+                    : user.role === 'Sales'
                     ? 'bg-cyan-100 text-cyan-800'
                     : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {user.role?.name || 'No Role'}
+                  {user.role || 'No Role'}
                 </span>
               </div>
 

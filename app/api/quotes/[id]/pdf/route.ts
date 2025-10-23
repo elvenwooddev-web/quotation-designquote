@@ -33,6 +33,17 @@ export async function GET(
       );
     }
 
+    // Check if quote status allows PDF generation
+    if (quote.status === 'DRAFT' || quote.status === 'PENDING_APPROVAL') {
+      return NextResponse.json(
+        {
+          error: 'PDF export not available',
+          message: 'Quote must be approved before exporting to PDF. Current status: ' + quote.status
+        },
+        { status: 403 }
+      );
+    }
+
     // Fetch terms and conditions from settings
     const { data: termsData } = await supabase
       .from('settings')
@@ -42,7 +53,7 @@ export async function GET(
 
     // Create policies array from settings terms
     const policies = termsData?.value ? [{
-      type: 'TERMS',
+      type: 'TERMS' as const,
       title: 'Terms and Conditions',
       description: termsData.value,
       isActive: true,

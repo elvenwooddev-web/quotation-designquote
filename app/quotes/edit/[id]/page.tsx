@@ -7,7 +7,6 @@ import { QuoteDetails } from '@/components/QuoteBuilder/QuoteDetails';
 import { DiscountModeTabs } from '@/components/QuoteBuilder/DiscountModeTabs';
 import { QuotationItems } from '@/components/QuoteBuilder/QuotationItems';
 import { Summary } from '@/components/QuoteBuilder/Summary';
-import { PolicyBuilder } from '@/components/QuoteBuilder/PolicyBuilder';
 import { TermsPreview } from '@/components/QuoteBuilder/TermsPreview';
 import { QuoteActions } from '@/components/QuoteBuilder/QuoteActions';
 import { useQuoteStore } from '@/lib/store';
@@ -110,7 +109,7 @@ export default function EditQuotePage({
           {/* Quotation Items */}
           <QuotationItems />
 
-          {/* Summary and Policy Builder Grid */}
+          {/* Summary and Terms Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - Summary */}
             <div className="space-y-4">
@@ -118,9 +117,8 @@ export default function EditQuotePage({
               <QuoteActions />
             </div>
 
-            {/* Right Column - Policy Builder */}
+            {/* Right Column - Terms Preview */}
             <div className="space-y-4">
-              <PolicyBuilder />
               <TermsPreview />
             </div>
           </div>

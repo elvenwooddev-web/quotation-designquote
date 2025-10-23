@@ -70,9 +70,9 @@ export default function QuoteDetailPage({
   const [approving, setApproving] = useState(false);
 
   // Permission checks
-  const canEdit = permissions ? hasPermission(permissions, 'quotes', 'canedit') : false;
-  const canDelete = permissions ? hasPermission(permissions, 'quotes', 'candelete') : false;
-  const canApprove = permissions ? hasPermission(permissions, 'quotes', 'canapprove') : false;
+  const canEdit = permissions ? hasPermission(permissions, 'quotes', 'canEdit') : false;
+  const canDelete = permissions ? hasPermission(permissions, 'quotes', 'canDelete') : false;
+  const canApprove = permissions ? hasPermission(permissions, 'quotes', 'canApprove') : false;
 
   useEffect(() => {
     params.then((resolvedParams) => {

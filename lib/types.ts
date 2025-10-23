@@ -14,6 +14,7 @@ export interface Product {
   itemCode: string;
   name: string;
   description: string | null;
+  unit: string | null;
   categoryId: string | null;
   baseRate: number;
   imageUrl: string | null;
@@ -38,7 +39,7 @@ export interface Client {
 // Quote and Policy Types
 export type DiscountMode = 'LINE_ITEM' | 'OVERALL' | 'BOTH';
 export type QuoteStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'SENT' | 'ACCEPTED' | 'REJECTED';
-export type PolicyType = 'WARRANTY' | 'RETURNS' | 'PAYMENT' | 'CUSTOM';
+export type PolicyType = 'WARRANTY' | 'RETURNS' | 'PAYMENT' | 'CUSTOM' | 'TERMS';
 
 export interface Quote {
   id: string;
@@ -150,6 +151,15 @@ export interface QuoteWithDetails extends Quote {
 export interface CategoryContribution {
   categoryName: string;
   total: number;
+}
+
+export interface QuoteCalculations {
+  subtotal: number;
+  discount: number;
+  taxableAmount: number;
+  tax: number;
+  grandTotal: number;
+  categoryContributions: CategoryContribution[];
 }
 
 // Settings Types

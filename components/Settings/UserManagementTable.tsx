@@ -128,25 +128,25 @@ export function UserManagementTable() {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  user.role?.name === 'Admin'
+                  user.role === 'Admin'
                     ? 'bg-red-100 text-red-800'
-                    : user.role?.name === 'Sales Head'
+                    : user.role === 'Sales Head'
                     ? 'bg-purple-100 text-purple-800'
-                    : user.role?.name === 'Sales Executive'
+                    : user.role === 'Sales Executive'
                     ? 'bg-indigo-100 text-indigo-800'
-                    : user.role?.name === 'Sales'
+                    : user.role === 'Sales'
                     ? 'bg-cyan-100 text-cyan-800'
                     : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {user.role?.name || 'No Role'}
+                  {user.role || 'No Role'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   <div className="relative">
                     <Switch
-                      checked={user.isactive}
-                      onCheckedChange={() => handleStatusToggle(user.id, user.isactive)}
+                      checked={user.isActive}
+                      onCheckedChange={() => handleStatusToggle(user.id, user.isActive)}
                       disabled={updatingUserId === user.id}
                       className={updatingUserId === user.id ? 'opacity-50 cursor-wait' : ''}
                     />
@@ -157,7 +157,7 @@ export function UserManagementTable() {
                     )}
                   </div>
                   <span className={`ml-2 text-sm ${updatingUserId === user.id ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {user.isactive ? 'Active' : 'Inactive'}
+                    {user.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
               </td>

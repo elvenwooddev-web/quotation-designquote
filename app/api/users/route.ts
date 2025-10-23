@@ -32,14 +32,7 @@ export async function GET() {
       isActive: user.isactive,
       createdAt: user.createdat,
       updatedAt: user.updatedat,
-      role: user.role ? {
-        id: user.role.id,
-        name: user.role.name,
-        description: user.role.description,
-        isProtected: user.role.isprotected,
-        createdAt: user.role.createdat,
-        updatedAt: user.role.updatedat,
-      } : null,
+      role: user.role ? user.role.name : null,
     }));
 
     return NextResponse.json(mappedUsers);
@@ -160,14 +153,7 @@ export async function POST(request: NextRequest) {
       isActive: user.isactive,
       createdAt: user.createdat,
       updatedAt: user.updatedat,
-      role: user.role ? {
-        id: user.role.id,
-        name: user.role.name,
-        description: user.role.description,
-        isProtected: user.role.isprotected,
-        createdAt: user.role.createdat,
-        updatedAt: user.role.updatedat,
-      } : null,
+      role: user.role ? user.role.name : null,
     };
 
     return NextResponse.json(mappedUser, { status: 201 });
@@ -247,14 +233,7 @@ export async function PUT(request: NextRequest) {
       isActive: user.isactive,
       createdAt: user.createdat,
       updatedAt: user.updatedat,
-      role: user.role ? {
-        id: user.role.id,
-        name: user.role.name,
-        description: user.role.description,
-        isProtected: user.role.isprotected,
-        createdAt: user.role.createdat,
-        updatedAt: user.role.updatedat,
-      } : null,
+      role: user.role ? user.role.name : null,
     };
 
     return NextResponse.json(mappedUser);

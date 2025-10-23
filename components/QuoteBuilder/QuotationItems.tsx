@@ -132,7 +132,7 @@ export function QuotationItems() {
                                 {item.product?.category?.name || 'Uncategorized'}
                               </span>
                               <p className="text-sm text-gray-500">
-                                {item.product?.unit || 'pcs'}
+                                pcs
                               </p>
                             </div>
                             {item.dimensions && Object.keys(item.dimensions).length > 0 && (
@@ -167,7 +167,7 @@ export function QuotationItems() {
                             </div>
 
                             {/* Conditional Fields for Area Units */}
-                            {isAreaUnit(item.product?.unit) ? (
+                            {isAreaUnit(item.product?.unit ?? undefined) ? (
                               <>
                                 {/* Length Field */}
                                 <div className="col-span-1">

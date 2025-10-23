@@ -22,9 +22,9 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Permission checks
-  const canCreate = permissions ? hasPermission(permissions, 'clients', 'cancreate') : false;
-  const canEdit = permissions ? hasPermission(permissions, 'clients', 'canedit') : false;
-  const canDelete = permissions ? hasPermission(permissions, 'clients', 'candelete') : false;
+  const canCreate = permissions ? hasPermission(permissions, 'clients', 'canCreate') : false;
+  const canEdit = permissions ? hasPermission(permissions, 'clients', 'canEdit') : false;
+  const canDelete = permissions ? hasPermission(permissions, 'clients', 'canDelete') : false;
 
   useEffect(() => {
     fetchClients();

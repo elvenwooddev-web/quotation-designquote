@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuoteStore } from '@/lib/store';
 import { calculateQuoteTotals, formatCurrency } from '@/lib/calculations';
+import { CategoryContribution } from '@/lib/types';
 
 export function Summary() {
   const items = useQuoteStore((state) => state.items);
@@ -101,7 +102,7 @@ export function Summary() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {calculations.categoryContributions.map((contrib) => (
+              {calculations.categoryContributions.map((contrib: CategoryContribution) => (
                 <div key={contrib.categoryName} className="flex justify-between text-sm">
                   <span className="text-gray-700">{contrib.categoryName}</span>
                   <span className="font-medium">{formatCurrency(contrib.total)}</span>

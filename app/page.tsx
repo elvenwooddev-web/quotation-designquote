@@ -58,7 +58,7 @@ export default function Dashboard() {
       }
 
       const params = new URLSearchParams();
-      if (user?.role?.name) params.append('role', user.role.name);
+      if (user?.role) params.append('role', user.role);
       if (user?.id) params.append('userId', user.id);
       params.append('period', timePeriod);
 
@@ -203,7 +203,7 @@ export default function Dashboard() {
         </div>
 
         {/* Pending Approvals Section - Always visible for users with approval permissions */}
-        {hasPermission(permissions, 'quotes', 'canapprove') && (
+        {hasPermission(permissions, 'quotes', 'canApprove') && (
           <div className={`grid grid-cols-1 mt-8 transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Pending Approvals</h3>

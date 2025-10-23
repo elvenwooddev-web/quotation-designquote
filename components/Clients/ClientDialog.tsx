@@ -34,8 +34,8 @@ export function ClientDialog({ open, onOpenChange, client, onSave }: ClientDialo
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
-        source: client.source || 'Other',
-        expectedDealValue: client.expectedDealValue ? String(client.expectedDealValue) : '',
+        source: 'Other',
+        expectedDealValue: '',
       });
     } else {
       setFormData({

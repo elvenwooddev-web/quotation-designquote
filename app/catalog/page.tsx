@@ -139,9 +139,9 @@ export default function CatalogPage() {
     }
   };
 
-  const canCreateProduct = permissions ? hasPermission(permissions, 'products', 'cancreate') : false;
-  const canEditProduct = permissions ? hasPermission(permissions, 'products', 'canedit') : false;
-  const canDeleteProduct = permissions ? hasPermission(permissions, 'products', 'candelete') : false;
+  const canCreateProduct = permissions ? hasPermission(permissions, 'products', 'canCreate') : false;
+  const canEditProduct = permissions ? hasPermission(permissions, 'products', 'canEdit') : false;
+  const canDeleteProduct = permissions ? hasPermission(permissions, 'products', 'canDelete') : false;
 
   return (
     <div className="flex min-h-screen bg-gray-50">

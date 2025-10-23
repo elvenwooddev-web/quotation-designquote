@@ -137,7 +137,7 @@ export function ProductCatalog() {
                 {category.name}
               </button>
             ))}
-            {permissions && hasPermission(permissions, 'categories', 'cancreate') && (
+            {permissions && hasPermission(permissions, 'categories', 'canCreate') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -179,7 +179,7 @@ export function ProductCatalog() {
                     {product.description}
                   </p>
                   <p className="text-sm font-semibold text-gray-900 mt-1">
-                    ₹{product.baseRate.toLocaleString('en-IN')} / {product.unit}
+                    ₹{product.baseRate.toLocaleString('en-IN')}
                   </p>
                 </div>
                 <Button size="sm" variant="ghost" onClick={(e) => {
@@ -198,7 +198,7 @@ export function ProductCatalog() {
             </div>
           )}
 
-          {permissions && hasPermission(permissions, 'products', 'cancreate') && (
+          {permissions && hasPermission(permissions, 'products', 'canCreate') && (
             <Button
               variant="outline"
               size="sm"

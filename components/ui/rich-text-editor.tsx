@@ -189,7 +189,7 @@ export function RichTextEditor({
         setTimeout(() => {
           const table = document.getElementById(tableId);
           if (table) {
-            const firstCell = table.querySelector('th, td');
+            const firstCell = table.querySelector('th, td') as HTMLElement;
             if (firstCell) {
               firstCell.focus();
             }

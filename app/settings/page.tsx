@@ -153,7 +153,7 @@ export default function SettingsPage() {
   };
 
   // Redirect if not admin
-  if (user?.role?.name !== 'Admin') {
+  if (user?.role !== 'Admin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
