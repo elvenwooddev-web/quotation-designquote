@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,35 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
   const router = useRouter();
+
+  // Check for recovery session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Session error:', error);
+          setError('Invalid or expired reset link. Please request a new password reset.');
+          return;
+        }
+
+        if (!session) {
+          setError('No active session found. Please click the reset link from your email again.');
+          return;
+        }
+
+        setSessionReady(true);
+      } catch (err) {
+        console.error('Error checking session:', err);
+        setError('Failed to verify reset link.');
+      }
+    };
+
+    checkSession();
+  }, []);
 
   const validatePassword = () => {
     if (password.length < 8) {
@@ -61,6 +89,28 @@ export default function ResetPasswordPage() {
     }
   };
 
+  // Show error if session is invalid
+  if (error && !sessionReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <Card className="w-full max-w-md p-8 shadow-lg">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+              <Lock className="w-8 h-8 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Reset Link</h1>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <Link href="/forgot-password">
+              <Button className="w-full">
+                Request New Reset Link
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
@@ -78,6 +128,20 @@ export default function ResetPasswordPage() {
                 Continue to Sign In
               </Button>
             </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading while checking session
+  if (!sessionReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <Card className="w-full max-w-md p-8 shadow-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Verifying reset link...</p>
           </div>
         </Card>
       </div>
