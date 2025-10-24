@@ -78,9 +78,19 @@ export function EditUserDialog({ open, onOpenChange, user, onUserUpdated }: Edit
     setLoading(true);
 
     try {
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch('/api/users', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           id: user.id,
           roleId: formData.roleId,

@@ -20,7 +20,21 @@ export function UserManagementTable() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
       setUsers(data);
     } catch (error) {
@@ -39,9 +53,22 @@ export function UserManagementTable() {
     setUpdatingUserId(userId);
 
     try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch('/api/users', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           id: userId,
           isactive: newStatus,
@@ -81,8 +108,21 @@ export function UserManagementTable() {
     setUpdatingUserId(userId);
 
     try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch(`/api/users/${userId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
 
       if (!response.ok) {
