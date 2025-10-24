@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { hasPermission } from '@/lib/permissions';
+import { supabase } from '@/lib/db';
 
 export default function CatalogPage() {
   const { user, permissions } = useAuth();
@@ -43,7 +44,18 @@ export default function CatalogPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/categories');
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch('/api/categories', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

@@ -5,6 +5,7 @@ import { Category } from '@/lib/types';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CategoryDialog } from '@/components/ProductCatalog/CategoryDialog';
+import { supabase } from '@/lib/db';
 
 interface CategorySidebarProps {
   categories: Category[];
@@ -40,8 +41,18 @@ export function CategorySidebar({ categories, selectedCategory, onSelectCategory
     }
 
     try {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch(`/api/categories/${category.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
 
       if (!response.ok) {

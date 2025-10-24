@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Category } from '@/lib/types';
+import { supabase } from '@/lib/db';
 
 interface CategoryDialogProps {
   open: boolean;
@@ -35,19 +36,32 @@ export function CategoryDialog({ open, onOpenChange, onCategoryCreated, editingC
     setLoading(true);
 
     try {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       let response;
       if (editingCategory) {
         // Update existing category
         response = await fetch(`/api/categories/${editingCategory.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify(formData),
         });
       } else {
         // Create new category
         response = await fetch('/api/categories', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify(formData),
         });
       }
@@ -57,7 +71,7 @@ export function CategoryDialog({ open, onOpenChange, onCategoryCreated, editingC
       const category = await response.json();
       onCategoryCreated(category);
       onOpenChange(false);
-      
+
       // Reset form
       setFormData({
         name: '',
