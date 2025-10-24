@@ -12,8 +12,8 @@ const authFile = 'playwright/.auth/user.json';
  * Test user credentials
  * Update these to match your test environment
  */
-const TEST_EMAIL = process.env.TEST_EMAIL || 'admin@test.designquote.com';
-const TEST_PASSWORD = process.env.TEST_PASSWORD || 'Test@123456';
+const TEST_EMAIL = process.env.TEST_EMAIL || 'varun@elvenwood.in';
+const TEST_PASSWORD = process.env.TEST_PASSWORD || 'Varun@1234';
 
 setup('authenticate', async ({ page }) => {
   // Navigate to login page
@@ -27,7 +27,8 @@ setup('authenticate', async ({ page }) => {
   await page.click('button[type="submit"]');
 
   // Wait for redirect to dashboard (successful login)
-  await page.waitForURL('/', { timeout: 10000 });
+  // Increased timeout to allow for auth profile fetching
+  await page.waitForURL('/', { timeout: 30000 });
 
   // Verify we're logged in by checking for dashboard content
   await expect(page.locator('text=Dashboard')).toBeVisible({ timeout: 10000 });
