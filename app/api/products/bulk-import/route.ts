@@ -62,37 +62,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const headers = lines[0].split(',').map((h: string) => h.trim());
-    console.log('Headers found:', headers);
-
-    // Validate required headers
-    const requiredHeaders = ['Item Name', 'UOM', 'Rate', 'Category'];
-    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-    if (missingHeaders.length > 0) {
-      console.error('Missing headers:', missingHeaders);
-      return NextResponse.json(
-        { error: `Missing required columns: ${missingHeaders.join(', ')}` },
-        { status: 400 }
-      );
-    }
-
-    // Fetch all categories to map names to IDs
-    console.log('Fetching existing categories...');
-    const { data: categories, error: categoriesError } = await supabase
-      .from('categories')
-      .select('id, name');
-
-    if (categoriesError) {
-      console.error('Error fetching categories:', categoriesError);
-      throw categoriesError;
-    }
-
-    console.log('Existing categories:', categories?.length || 0);
-
-    const categoryMap = new Map(
-      categories?.map(cat => [cat.name.toLowerCase(), cat.id]) || []
-    );
-
     // Helper function to parse CSV line (handles quoted fields with commas)
     function parseCSVLine(line: string): string[] {
       const result: string[] = [];
@@ -114,6 +83,41 @@ export async function POST(request: NextRequest) {
       result.push(current.trim());
       return result;
     }
+
+    // Use parseCSVLine for headers too (consistency)
+    const headers = parseCSVLine(lines[0]);
+    console.log('Headers found:', headers);
+
+    // Validate required headers (case-insensitive)
+    const requiredHeaders = ['Item Name', 'UOM', 'Rate', 'Category'];
+    const headersLower = headers.map(h => h.toLowerCase());
+    const missingHeaders = requiredHeaders.filter(h => !headersLower.includes(h.toLowerCase()));
+
+    if (missingHeaders.length > 0) {
+      console.error('Missing headers:', missingHeaders);
+      console.error('Available headers:', headers);
+      return NextResponse.json(
+        { error: `Missing required columns: ${missingHeaders.join(', ')}. Found: ${headers.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // Fetch all categories to map names to IDs
+    console.log('Fetching existing categories...');
+    const { data: categories, error: categoriesError } = await supabase
+      .from('categories')
+      .select('id, name');
+
+    if (categoriesError) {
+      console.error('Error fetching categories:', categoriesError);
+      throw categoriesError;
+    }
+
+    console.log('Existing categories:', categories?.length || 0);
+
+    const categoryMap = new Map(
+      categories?.map(cat => [cat.name.toLowerCase(), cat.id]) || []
+    );
 
     // Parse rows with proper CSV parsing
     const rows: CSVRow[] = lines.slice(1).map((line: string) => {
@@ -188,16 +192,25 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert product
+        const productData = {
+          itemcode: row['Item Code'] || null,
+          name: row['Item Name'],
+          description: row['Description'] || null,
+          unit: row['UOM'],
+          baserate: rate,
+          categoryid: categoryId,
+        };
+
+        console.log(`Row ${rowNum}: Inserting product:`, {
+          name: productData.name,
+          unit: productData.unit,
+          rate: productData.baserate,
+          category: row['Category']
+        });
+
         const { error: insertError } = await supabase
           .from('products')
-          .insert({
-            itemcode: row['Item Code'] || null,
-            name: row['Item Name'],
-            description: row['Description'] || null,
-            unit: row['UOM'],
-            baserate: rate,
-            categoryid: categoryId,
-          });
+          .insert(productData);
 
         if (insertError) {
           // Check if it's a duplicate item code error

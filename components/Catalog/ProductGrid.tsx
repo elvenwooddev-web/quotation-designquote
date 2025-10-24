@@ -67,7 +67,7 @@ export function ProductGrid({ products, onEdit, onDelete, canEdit, canDelete }: 
                       <div className="text-sm text-gray-500 mt-1">{product.description}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">-</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{product.unit || '-'}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     ₹{product.baseRate.toLocaleString('en-IN')}
                   </td>
