@@ -94,18 +94,28 @@ export default function ClientsPage() {
 
   const handleDeleteClient = async (clientId: string) => {
     if (!canDelete) return;
-    
+
     if (confirm('Are you sure you want to delete this client?')) {
       try {
+        // Get the current session token
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          throw new Error('Not authenticated. Please log in again.');
+        }
+
         const response = await fetch(`/api/clients/${clientId}`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
         });
-        
+
         if (!response.ok) {
           const data = await response.json();
           throw new Error(data.error || 'Failed to delete client');
         }
-        
+
         setClients(clients.filter(c => c.id !== clientId));
         if (selectedClient?.id === clientId) {
           setSelectedClient(null);
