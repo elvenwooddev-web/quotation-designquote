@@ -118,6 +118,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error('[Auth] Error getting session:', error);
+
+          // If session is invalid, clear it
+          if (error.message?.includes('invalid') || error.message?.includes('expired')) {
+            console.log('[Auth] Clearing invalid session');
+            await supabase.auth.signOut();
+          }
+
           if (mounted) {
             setUser(null);
             setPermissions([]);
@@ -138,8 +145,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             clearTimeout(timeout);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[Auth] Exception in getInitialSession:', error);
+
+        // Clear potentially corrupted session
+        try {
+          await supabase.auth.signOut();
+        } catch (signOutError) {
+          console.error('[Auth] Error signing out:', signOutError);
+        }
+
         if (mounted) {
           setUser(null);
           setPermissions([]);
@@ -175,6 +190,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (authUserId: string) => {
     try {
+      console.log('[Auth] Fetching user profile for auth user:', authUserId);
+
       // Fetch user profile from public.users linked to auth.users via authuserid
       const { data: userProfile, error } = await supabase
         .from('users')
@@ -194,6 +211,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('[Auth] Error fetching user profile:', error);
+        console.error('[Auth] Error code:', error.code);
+        console.error('[Auth] Error details:', error.details);
+        console.error('[Auth] Error hint:', error.hint);
+
+        // If RLS policy is blocking, provide helpful message
+        if (error.code === 'PGRST116' || error.message?.includes('no rows')) {
+          console.error('[Auth] No user profile found. Make sure a record exists in public.users with authuserid:', authUserId);
+        } else if (error.code === '42501' || error.message?.includes('permission denied')) {
+          console.error('[Auth] RLS policy blocked access to user profile. Check RLS policies on public.users table.');
+        }
+
         setUser(null);
         setPermissions([]);
         setLoading(false);
