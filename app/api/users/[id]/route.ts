@@ -83,22 +83,47 @@ export async function DELETE(
       );
     }
 
-    // Deactivate user instead of deleting
-    const { error } = await supabaseAdmin
+    // Step 1: Get the user's auth ID before deleting
+    const { data: user, error: fetchError } = await supabaseAdmin
       .from('users')
-      .update({
-        isactive: false,
-        updatedat: new Date().toISOString(),
-      })
+      .select('authuserid')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching user:', fetchError);
+      throw new Error('User not found');
+    }
+
+    // Step 2: Delete from public.users table
+    const { error: profileError } = await supabaseAdmin
+      .from('users')
+      .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (profileError) {
+      console.error('Error deleting user profile:', profileError);
+      throw profileError;
+    }
+
+    // Step 3: Delete from auth.users (if auth user exists)
+    if (user.authuserid) {
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(
+        user.authuserid
+      );
+
+      if (authError) {
+        console.error('Error deleting auth user:', authError);
+        // Don't throw - profile is already deleted
+        // Just log the error
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deactivating user:', error);
+    console.error('Error deleting user:', error);
     return NextResponse.json(
-      { error: 'Failed to deactivate user' },
+      { error: 'Failed to delete user' },
       { status: 500 }
     );
   }

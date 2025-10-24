@@ -74,7 +74,7 @@ export function UserManagementTable() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to deactivate this user?')) {
+    if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone and will remove the user from both the database and authentication system.')) {
       return;
     }
 
