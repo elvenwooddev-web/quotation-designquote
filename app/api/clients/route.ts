@@ -102,7 +102,9 @@ export async function POST(request: NextRequest) {
       insertData.expecteddealvalue = Number(expectedDealValue);
     }
 
-    const { data: client, error } = await supabase
+    // IMPORTANT: Use supabaseAdmin to bypass RLS for client creation
+    // This is a server-side operation after verifying auth token
+    const { data: client, error } = await supabaseAdmin
       .from('clients')
       .insert(insertData)
       .select()
