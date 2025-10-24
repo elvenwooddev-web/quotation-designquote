@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
+import { supabase, supabaseAdmin } from '@/lib/db';
 
 export async function GET() {
   try {
@@ -62,13 +62,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user profile to get the user UUID
-    const { data: userProfile, error: profileError } = await supabase
+    // Use supabaseAdmin to bypass RLS when looking up the user profile
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const { data: userProfile, error: profileError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('authuserid', authUser.id)
       .single();
 
     if (profileError || !userProfile) {
+      console.error('User profile not found for auth user:', authUser.id, profileError);
       return NextResponse.json(
         { error: 'User profile not found' },
         { status: 404 }
