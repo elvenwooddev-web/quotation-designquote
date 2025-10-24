@@ -88,7 +88,21 @@ export function BulkImport({ categories, onImportComplete }: BulkImportProps) {
         throw new Error(result.error || 'Failed to import products');
       }
 
-      setSuccess(`Successfully imported ${result.imported} products. ${result.skipped > 0 ? `Skipped ${result.skipped} rows due to errors.` : ''}`);
+      let successMessage = `Successfully imported ${result.imported} products.`;
+      if (result.categoriesCreated > 0) {
+        successMessage += ` Created ${result.categoriesCreated} new ${result.categoriesCreated === 1 ? 'category' : 'categories'}.`;
+      }
+      if (result.skipped > 0) {
+        successMessage += ` Skipped ${result.skipped} rows due to errors.`;
+      }
+
+      // Show detailed errors if any
+      if (result.errors && result.errors.length > 0) {
+        console.log('Import errors:', result.errors);
+        successMessage += '\n\nErrors:\n' + result.errors.join('\n');
+      }
+
+      setSuccess(successMessage);
       setFile(null);
       setPreview([]);
       onImportComplete();
@@ -130,8 +144,9 @@ PROD-004,Door Handle Set,Stainless steel handle,set,25.50,Hardware`;
           <li>Download the sample CSV file to see the required format</li>
           <li>Required columns: Item Name, UOM, Rate, Category</li>
           <li>Optional columns: Item Code, Description</li>
-          <li>Category names must match existing categories exactly</li>
+          <li>Categories will be created automatically if they don&apos;t exist</li>
           <li>Rates should be numeric values without currency symbols</li>
+          <li>Descriptions can contain commas (will be handled correctly)</li>
         </ul>
       </div>
 
@@ -221,7 +236,7 @@ PROD-004,Door Handle Set,Stainless steel handle,set,25.50,Hardware`;
       {/* Success Message */}
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4">
-          {success}
+          <pre className="whitespace-pre-wrap text-sm font-sans">{success}</pre>
         </div>
       )}
     </div>

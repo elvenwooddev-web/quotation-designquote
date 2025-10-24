@@ -12,16 +12,21 @@ interface CSVRow {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== Starting bulk import ===');
+
     // Extract token from Authorization header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
 
     if (!token) {
+      console.error('No authorization token provided');
       return NextResponse.json(
         { error: 'Authorization token required' },
         { status: 401 }
       );
     }
+
+    console.log('Authorization token received');
 
     // Create authenticated Supabase client
     const supabase = createClient(
@@ -37,6 +42,7 @@ export async function POST(request: NextRequest) {
     );
 
     const { csvData } = await request.json();
+    console.log('CSV data received, length:', csvData?.length);
 
     if (!csvData) {
       return NextResponse.json(
@@ -47,6 +53,8 @@ export async function POST(request: NextRequest) {
 
     // Parse CSV data
     const lines = csvData.split('\n').filter((line: string) => line.trim());
+    console.log('Total lines (including header):', lines.length);
+
     if (lines.length < 2) {
       return NextResponse.json(
         { error: 'CSV file is empty or has no data rows' },
@@ -55,11 +63,13 @@ export async function POST(request: NextRequest) {
     }
 
     const headers = lines[0].split(',').map((h: string) => h.trim());
+    console.log('Headers found:', headers);
 
     // Validate required headers
     const requiredHeaders = ['Item Name', 'UOM', 'Rate', 'Category'];
     const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
     if (missingHeaders.length > 0) {
+      console.error('Missing headers:', missingHeaders);
       return NextResponse.json(
         { error: `Missing required columns: ${missingHeaders.join(', ')}` },
         { status: 400 }
@@ -67,19 +77,47 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch all categories to map names to IDs
+    console.log('Fetching existing categories...');
     const { data: categories, error: categoriesError } = await supabase
       .from('categories')
       .select('id, name');
 
-    if (categoriesError) throw categoriesError;
+    if (categoriesError) {
+      console.error('Error fetching categories:', categoriesError);
+      throw categoriesError;
+    }
+
+    console.log('Existing categories:', categories?.length || 0);
 
     const categoryMap = new Map(
       categories?.map(cat => [cat.name.toLowerCase(), cat.id]) || []
     );
 
-    // Parse rows
+    // Helper function to parse CSV line (handles quoted fields with commas)
+    function parseCSVLine(line: string): string[] {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    // Parse rows with proper CSV parsing
     const rows: CSVRow[] = lines.slice(1).map((line: string) => {
-      const values = line.split(',').map((v: string) => v.trim());
+      const values = parseCSVLine(line);
       const row: any = {};
       headers.forEach((header: string, index: number) => {
         row[header] = values[index] || '';
@@ -89,7 +127,11 @@ export async function POST(request: NextRequest) {
 
     let imported = 0;
     let skipped = 0;
+    let categoriesCreated = 0;
     const errors: string[] = [];
+    const createdCategories = new Set<string>();
+
+    console.log(`Processing ${rows.length} rows...`);
 
     // Process each row
     for (let i = 0; i < rows.length; i++) {
@@ -112,12 +154,37 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Find category ID
-        const categoryId = categoryMap.get(row['Category'].toLowerCase());
+        // Find or create category
+        const categoryNameLower = row['Category'].toLowerCase();
+        let categoryId = categoryMap.get(categoryNameLower);
+
         if (!categoryId) {
-          errors.push(`Row ${rowNum}: Category "${row['Category']}" not found`);
-          skipped++;
-          continue;
+          // Category doesn't exist, create it
+          console.log(`Creating new category: ${row['Category']}`);
+          const { data: newCategory, error: createCategoryError } = await supabase
+            .from('categories')
+            .insert({
+              name: row['Category'],
+              description: `Auto-created from bulk import`,
+              order: 999 // Put auto-created categories at the end
+            })
+            .select('id')
+            .single();
+
+          if (createCategoryError) {
+            errors.push(`Row ${rowNum}: Failed to create category "${row['Category']}" - ${createCategoryError.message}`);
+            skipped++;
+            continue;
+          }
+
+          categoryId = newCategory.id;
+          categoryMap.set(categoryNameLower, categoryId);
+
+          // Track created categories
+          if (!createdCategories.has(row['Category'])) {
+            createdCategories.add(row['Category']);
+            categoriesCreated++;
+          }
         }
 
         // Insert product
@@ -137,6 +204,7 @@ export async function POST(request: NextRequest) {
           if (insertError.code === '23505') {
             errors.push(`Row ${rowNum}: Duplicate item code "${row['Item Code']}"`);
           } else {
+            console.error(`Row ${rowNum} insert error:`, insertError);
             errors.push(`Row ${rowNum}: ${insertError.message}`);
           }
           skipped++;
@@ -144,15 +212,19 @@ export async function POST(request: NextRequest) {
           imported++;
         }
       } catch (err: any) {
+        console.error(`Row ${rowNum} exception:`, err);
         errors.push(`Row ${rowNum}: ${err.message}`);
         skipped++;
       }
     }
 
+    console.log(`Import complete: ${imported} imported, ${skipped} skipped, ${categoriesCreated} categories created`);
+
     return NextResponse.json({
       success: true,
       imported,
       skipped,
+      categoriesCreated,
       total: rows.length,
       errors: errors.length > 0 ? errors : undefined,
     });

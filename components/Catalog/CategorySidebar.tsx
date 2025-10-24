@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Category } from '@/lib/types';
+import { useState, useMemo } from 'react';
+import { Category, Product } from '@/lib/types';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CategoryDialog } from '@/components/ProductCatalog/CategoryDialog';
@@ -9,6 +9,7 @@ import { supabase } from '@/lib/db';
 
 interface CategorySidebarProps {
   categories: Category[];
+  products: Product[];
   selectedCategory: string;
   onSelectCategory: (categoryId: string) => void;
   onCategoryAdded: (category: Category) => void;
@@ -16,10 +17,19 @@ interface CategorySidebarProps {
   onCategoryDeleted: (categoryId: string) => void;
 }
 
-export function CategorySidebar({ categories, selectedCategory, onSelectCategory, onCategoryAdded, onCategoryUpdated, onCategoryDeleted }: CategorySidebarProps) {
+export function CategorySidebar({ categories, products, selectedCategory, onSelectCategory, onCategoryAdded, onCategoryUpdated, onCategoryDeleted }: CategorySidebarProps) {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const totalItems = 0; // TODO: Add item count when available
+
+  // Calculate item counts for each category
+  const categoriesWithCounts = useMemo(() => {
+    return categories.map(category => ({
+      ...category,
+      itemCount: products.filter(product => product.categoryId === category.id).length
+    }));
+  }, [categories, products]);
+
+  const totalItems = products.length;
   
   const handleCategoryCreated = (category: Category) => {
     if (editingCategory) {
@@ -114,12 +124,12 @@ export function CategorySidebar({ categories, selectedCategory, onSelectCategory
           </span>
         </button>
         
-        {categories.map((category) => (
+        {categoriesWithCounts.map((category) => (
           <div
             key={category.id}
             className={`w-full flex justify-between items-center p-3 rounded-lg text-left transition-colors group ${
-              selectedCategory === category.id 
-                ? 'bg-blue-50 text-blue-600 border border-blue-200' 
+              selectedCategory === category.id
+                ? 'bg-blue-50 text-blue-600 border border-blue-200'
                 : 'hover:bg-gray-50 border border-transparent'
             }`}
           >
@@ -130,7 +140,7 @@ export function CategorySidebar({ categories, selectedCategory, onSelectCategory
             >
               <span className="font-medium">{category.name}</span>
               <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-                {0}
+                {category.itemCount || 0}
               </span>
             </button>
             <div className="flex space-x-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">

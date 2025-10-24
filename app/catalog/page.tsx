@@ -194,6 +194,7 @@ export default function CatalogPage() {
       {/* Left Sidebar - Categories */}
       <CategorySidebar
         categories={categories}
+        products={products}
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
         onCategoryAdded={handleCategoryAdded}

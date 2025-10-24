@@ -5,6 +5,7 @@ export interface Category {
   description: string | null;
   isActive: boolean;
   parentId: string | null;
+  itemCount?: number;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
