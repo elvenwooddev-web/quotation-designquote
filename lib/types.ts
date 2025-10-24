@@ -120,6 +120,7 @@ export interface User {
   authUserId?: string | null;
   name: string;
   email: string;
+  roleId: string;
   role: UserRole;
   isActive: boolean;
   createdAt: Date | string;
