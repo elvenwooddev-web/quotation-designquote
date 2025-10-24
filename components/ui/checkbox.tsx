@@ -17,14 +17,13 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     };
 
     return (
-      <label className="relative inline-block cursor-pointer" style={{ pointerEvents: 'none' }}>
+      <label className="relative inline-block cursor-pointer">
         <input
           type="checkbox"
           className="sr-only peer"
           checked={checked}
           onChange={handleChange}
           ref={ref}
-          style={{ pointerEvents: 'auto' }}
           {...props}
         />
         <div
@@ -34,7 +33,6 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             'hover:border-gray-400 peer-hover:border-gray-400',
             className
           )}
-          style={{ pointerEvents: 'auto' }}
         >
           {checked && (
             <Check className="h-3 w-3 text-white" />
