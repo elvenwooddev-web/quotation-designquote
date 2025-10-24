@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         if (session?.user) {
           await fetchUserProfile(session.user.id);
         } else {
@@ -174,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (authUserId: string) => {
     try {
-      // Fetch user with role information
+      // Fetch user profile from public.users linked to auth.users via authuserid
       const { data: userProfile, error } = await supabase
         .from('users')
         .select(`
@@ -200,7 +200,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!userProfile) {
-        console.error('[Auth] No user profile found');
+        console.error('[Auth] No user profile found for auth user:', authUserId);
+        console.error('[Auth] Make sure public.users has a record with authuserid =', authUserId);
         setUser(null);
         setPermissions([]);
         setLoading(false);
@@ -215,13 +216,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Use the data as-is since it's already in the correct format
-      setUser(userProfile as User);
+      // Map database column names to camelCase for frontend
+      const mappedUser: User = {
+        id: userProfile.id,
+        authUserId: userProfile.authuserid,
+        name: userProfile.name,
+        email: userProfile.email,
+        role: userProfile.role?.name || 'Unknown',
+        isActive: userProfile.isactive,
+        createdAt: userProfile.createdat,
+        updatedAt: userProfile.updatedat,
+      };
+
+      setUser(mappedUser);
 
       // Fetch permissions for the user's role
       if (userProfile.roleid) {
         await fetchRolePermissions(userProfile.roleid);
       } else {
+        console.warn('[Auth] User has no role assigned');
         setPermissions([]);
       }
     } catch (error) {
@@ -235,6 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchRolePermissions = async (roleId: string) => {
     try {
+      // Fetch permissions from public.role_permissions
       const { data: rolePermissions, error } = await supabase
         .from('role_permissions')
         .select('*')
@@ -246,13 +260,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (!rolePermissions) {
+      if (!rolePermissions || rolePermissions.length === 0) {
+        console.warn('[Auth] No permissions found for role:', roleId);
         setPermissions([]);
         return;
       }
 
-      // Use the data as-is since types match database columns
-      setPermissions(rolePermissions as RolePermission[]);
+      // Map database column names to camelCase for frontend
+      const mappedPermissions: RolePermission[] = rolePermissions.map((perm) => ({
+        id: perm.id,
+        roleId: perm.roleid,
+        resource: perm.resource,
+        canCreate: perm.cancreate,
+        canRead: perm.canread,
+        canEdit: perm.canedit,
+        canDelete: perm.candelete,
+        canApprove: perm.canapprove,
+        canExport: perm.canexport,
+      }));
+
+      setPermissions(mappedPermissions);
     } catch (error) {
       console.error('[Auth] Exception in fetchRolePermissions:', error);
       setPermissions([]);
@@ -306,7 +333,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Step 2: Create user profile in users table
-    const { data: userProfile, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('users')
       .insert({
         authuserid: authData.user.id,

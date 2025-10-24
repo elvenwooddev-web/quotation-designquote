@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
+import { supabase, supabaseAdmin } from '@/lib/db';
 import { User } from '@/lib/types';
 
 export async function GET() {
@@ -88,10 +88,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Create Supabase Auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Step 1: Create Supabase Auth user using admin client
+    // IMPORTANT: Must use supabaseAdmin for auth.admin operations
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Server configuration error: Admin client not available' },
+        { status: 500 }
+      );
+    }
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
+      email_confirm: true, // Auto-confirm email for internal users
     });
 
     if (authError) {
