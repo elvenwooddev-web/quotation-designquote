@@ -34,9 +34,9 @@ export default function QuotationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Permission checks
-  const canCreate = hasPermission(permissions, 'quotes', 'canCreate');
-  const canDelete = hasPermission(permissions, 'quotes', 'canDelete');
+  // Permission checks (with safety checks)
+  const canCreate = permissions ? hasPermission(permissions, 'quotes', 'canCreate') : false;
+  const canDelete = permissions ? hasPermission(permissions, 'quotes', 'canDelete') : false;
 
   useEffect(() => {
     fetchQuotes();
