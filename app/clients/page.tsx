@@ -10,6 +10,7 @@ import { ClientDialog } from '@/components/Clients/ClientDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
+import { supabase } from '@/lib/db';
 
 export default function ClientsPage() {
   const { user, permissions } = useAuth();
@@ -94,13 +95,21 @@ export default function ClientsPage() {
 
   const handleSaveClient = async (clientData: Partial<Client>) => {
     try {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const url = editingClient ? `/api/clients/${editingClient.id}` : '/api/clients';
       const method = editingClient ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(clientData),
       });
