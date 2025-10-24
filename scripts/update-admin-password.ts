@@ -82,7 +82,8 @@ async function updateAdminPassword() {
     } else {
       console.log('👤 User Profile:');
       console.log(`   Name: ${profile.name}`);
-      console.log(`   Role: ${profile.role?.name || 'No role'}`);
+      const roleName = Array.isArray(profile.role) && profile.role.length > 0 ? profile.role[0].name : 'No role';
+      console.log(`   Role: ${roleName}`);
       console.log(`   Active: ${profile.isactive ? 'Yes' : 'No'}`);
       console.log();
     }
