@@ -1,11 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { supabase, supabaseAdmin } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Get the authorization token from the request header
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Authorization token required' },
+        { status: 401 }
+      );
+    }
+
+    // Create an authenticated Supabase client
+    const authenticatedSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
+
     // Optimized query: Use a single query with aggregation instead of N+1 queries
     // This fetches all clients with their quote counts in one database call
-    const { data: clients, error } = await supabase
+    const { data: clients, error } = await authenticatedSupabase
       .from('clients')
       .select(`
         *,

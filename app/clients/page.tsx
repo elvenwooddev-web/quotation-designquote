@@ -34,13 +34,25 @@ export default function ClientsPage() {
   const fetchClients = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/clients');
+
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch('/api/clients', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch clients');
       }
-      
+
       setClients(data);
     } catch (err: any) {
       setError(err.message);
@@ -51,13 +63,24 @@ export default function ClientsPage() {
 
   const handleClientSelect = async (client: Client) => {
     try {
-      const response = await fetch(`/api/clients/${client.id}`);
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch(`/api/clients/${client.id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch client details');
       }
-      
+
       setSelectedClient(data);
     } catch (err: any) {
       setError(err.message);
