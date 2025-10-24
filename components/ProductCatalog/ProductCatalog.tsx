@@ -37,7 +37,22 @@ export function ProductCatalog() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/categories');
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error('Not authenticated');
+        return;
+      }
+
+      const response = await fetch('/api/categories', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
       setCategories(data);
       if (data.length > 0 && !selectedCategory) {
@@ -50,11 +65,27 @@ export function ProductCatalog() {
 
   const fetchProducts = async () => {
     try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error('Not authenticated');
+        setProducts([]);
+        return;
+      }
+
       const params = new URLSearchParams();
       if (selectedCategory) params.append('categoryId', selectedCategory);
       if (searchQuery) params.append('search', searchQuery);
 
-      const response = await fetch(`/api/products?${params}`);
+      const response = await fetch(`/api/products?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
 
       // Validate response is an array to prevent "map is not a function" errors
@@ -85,9 +116,22 @@ export function ProductCatalog() {
 
   const handleSaveProduct = async (productData: Partial<Product>) => {
     try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch('/api/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(productData),
       });
 
