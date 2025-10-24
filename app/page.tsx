@@ -43,6 +43,16 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30days');
 
+  // Redirect to reset-password if URL contains recovery token
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery') || hash.includes('type=invite')) {
+      console.log('[Dashboard] Detected recovery/invite token, redirecting to reset-password');
+      window.location.href = `/reset-password${hash}`;
+      return;
+    }
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
   }, [user, timePeriod]);

@@ -64,6 +64,40 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get current user from auth token
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized - No auth token provided' },
+        { status: 401 }
+      );
+    }
+
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid auth token' },
+        { status: 401 }
+      );
+    }
+
+    // Get user profile to get the user UUID
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('authuserid', authUser.id)
+      .single();
+
+    if (profileError || !userProfile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const {
       title,
@@ -137,6 +171,7 @@ export async function POST(request: NextRequest) {
         grandtotal: calculations.grandTotal,
         status: quoteStatus, // Use the determined status
         version: 1, // New quotes start at version 1
+        createdby: userProfile.id, // Set quote owner for RLS
       })
       .select()
       .single();

@@ -24,22 +24,40 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Check if we have a recovery token in the URL hash
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const type = hashParams.get('type');
+
+        console.log('[ResetPassword] URL hash params:', { accessToken: !!accessToken, type });
+
+        // If we have a recovery token, Supabase should automatically handle it
+        if (accessToken && type === 'recovery') {
+          console.log('[ResetPassword] Recovery token found, waiting for session...');
+          // Wait a bit for Supabase to process the token
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
 
+        console.log('[ResetPassword] Session check:', { hasSession: !!session, error });
+
         if (error) {
-          console.error('Session error:', error);
+          console.error('[ResetPassword] Session error:', error);
           setError('Invalid or expired reset link. Please request a new password reset.');
           return;
         }
 
         if (!session) {
+          console.error('[ResetPassword] No active session found');
           setError('No active session found. Please click the reset link from your email again.');
           return;
         }
 
+        console.log('[ResetPassword] Session ready');
         setSessionReady(true);
       } catch (err) {
-        console.error('Error checking session:', err);
+        console.error('[ResetPassword] Error checking session:', err);
         setError('Failed to verify reset link.');
       }
     };

@@ -33,6 +33,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (!loading && !user && !isPublicRoute) {
       router.push('/login');
     }
+
+    // Redirect authenticated users from login to dashboard
+    // BUT NOT from reset-password (they need to complete the password reset)
+    if (!loading && user && pathname === '/login') {
+      router.push('/');
+    }
   }, [user, loading, router, isPublicRoute, pathname]);
 
   // Always render login page without protection
