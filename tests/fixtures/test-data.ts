@@ -54,6 +54,8 @@ export function generateClientData(overrides = {}) {
     city: 'Test City',
     state: 'Test State',
     pincode: '123456',
+    source: 'Other',
+    expectedDealValue: 10000,
     ...overrides,
   };
 }

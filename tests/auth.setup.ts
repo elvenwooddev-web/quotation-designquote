@@ -10,10 +10,10 @@ const authFile = 'playwright/.auth/user.json';
 
 /**
  * Test user credentials
- * Update these to match your test environment
+ * Using dedicated Playwright test user account
  */
-const TEST_EMAIL = process.env.TEST_EMAIL || 'varun@elvenwood.in';
-const TEST_PASSWORD = process.env.TEST_PASSWORD || 'Varun@1234';
+const TEST_EMAIL = process.env.TEST_EMAIL || 'testuser@elvenwood.in';
+const TEST_PASSWORD = process.env.TEST_PASSWORD || 'TestUser123!';
 
 setup('authenticate', async ({ page }) => {
   // Navigate to login page
