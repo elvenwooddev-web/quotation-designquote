@@ -18,6 +18,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('user-management');
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Company Info State
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
@@ -205,7 +206,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="p-6">
-                <UserManagementTable />
+                <UserManagementTable key={refreshKey} />
               </div>
             </div>
           </TabsContent>
@@ -234,7 +235,11 @@ export default function SettingsPage() {
         </Tabs>
 
         {/* User Dialog */}
-        <UserDialog open={showUserDialog} onOpenChange={setShowUserDialog} />
+        <UserDialog
+          open={showUserDialog}
+          onOpenChange={setShowUserDialog}
+          onUserCreated={() => setRefreshKey(prev => prev + 1)}
+        />
       </div>
     </div>
   );

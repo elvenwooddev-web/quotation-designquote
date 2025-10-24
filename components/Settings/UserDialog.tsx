@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 interface Role {
   id: string;
@@ -15,9 +16,11 @@ interface Role {
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUserCreated?: () => void;
 }
 
-export function UserDialog({ open, onOpenChange }: UserDialogProps) {
+export function UserDialog({ open, onOpenChange, onUserCreated }: UserDialogProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
@@ -86,8 +89,12 @@ export function UserDialog({ open, onOpenChange }: UserDialogProps) {
         roleId: roles.length > 0 ? roles[0].id : '',
       });
 
-      // Refresh the page to show new user
-      window.location.reload();
+      // Refresh the user list if callback provided, otherwise use router refresh
+      if (onUserCreated) {
+        onUserCreated();
+      } else {
+        router.refresh();
+      }
     } catch (error: any) {
       console.error('Error creating user:', error);
       alert(error.message || 'Failed to create user. Please try again.');
