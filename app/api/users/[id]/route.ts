@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
+import { supabase, supabaseAdmin } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
@@ -75,8 +75,16 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    // IMPORTANT: Use supabaseAdmin to bypass RLS for admin operations
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Server configuration error: Admin client not available' },
+        { status: 500 }
+      );
+    }
+
     // Deactivate user instead of deleting
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('users')
       .update({
         isactive: false,

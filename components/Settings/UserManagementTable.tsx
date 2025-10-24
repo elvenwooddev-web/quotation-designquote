@@ -5,11 +5,14 @@ import { User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Edit, Trash2 } from 'lucide-react';
+import { EditUserDialog } from './EditUserDialog';
 
 export function UserManagementTable() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -65,25 +68,34 @@ export function UserManagementTable() {
     }
   };
 
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setShowEditDialog(true);
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to deactivate this user?')) {
       return;
     }
+
+    setUpdatingUserId(userId);
 
     try {
       const response = await fetch(`/api/users/${userId}`, {
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        setUsers(users.map(user =>
-          user.id === userId
-            ? { ...user, isactive: false }
-            : user
-        ));
+      if (!response.ok) {
+        throw new Error('Failed to deactivate user');
       }
+
+      // Refresh the user list
+      await fetchUsers();
     } catch (error) {
       console.error('Error deactivating user:', error);
+      alert('Failed to deactivate user. Please try again.');
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
@@ -166,8 +178,9 @@ export function UserManagementTable() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => alert('User editing feature coming soon!')}
-                    title="Edit user (coming soon)"
+                    onClick={() => handleEditUser(user)}
+                    title="Edit user role"
+                    disabled={updatingUserId === user.id}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -176,6 +189,8 @@ export function UserManagementTable() {
                     size="sm"
                     onClick={() => handleDeleteUser(user.id)}
                     className="text-red-600 hover:text-red-700"
+                    title="Deactivate user"
+                    disabled={updatingUserId === user.id}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -191,6 +206,14 @@ export function UserManagementTable() {
           No users found
         </div>
       )}
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        user={editingUser}
+        onUserUpdated={() => fetchUsers()}
+      />
     </div>
   );
 }
