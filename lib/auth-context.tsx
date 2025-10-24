@@ -293,7 +293,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -303,7 +303,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
 
-    // The user profile will be fetched automatically via the auth state change listener
+    if (!data.user) {
+      throw new Error('No user returned from sign in');
+    }
+
+    // Explicitly fetch the user profile to ensure it loads before proceeding
+    // This prevents the loading state from hanging
+    console.log('[Auth] Sign in successful, fetching profile for:', data.user.id);
+    await fetchUserProfile(data.user.id);
   };
 
   const signUp = async (email: string, password: string, userData: { name: string; roleId: string }) => {
