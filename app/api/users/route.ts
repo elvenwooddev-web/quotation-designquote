@@ -118,7 +118,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2: Create user profile in users table
-    const { data: user, error: userError } = await supabase
+    // IMPORTANT: Use supabaseAdmin to bypass RLS policies
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
         authuserid: authData.user.id,
