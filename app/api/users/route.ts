@@ -4,8 +4,17 @@ import { User } from '@/lib/types';
 
 export async function GET() {
   try {
+    // IMPORTANT: Use supabaseAdmin to bypass RLS for admin user management
+    // This is a server-side admin operation
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Server configuration error: Admin client not available' },
+        { status: 500 }
+      );
+    }
+
     // Fetch users with role details
-    const { data: users, error } = await supabase
+    const { data: users, error } = await supabaseAdmin
       .from('users')
       .select(`
         *,

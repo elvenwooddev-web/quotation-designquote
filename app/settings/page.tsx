@@ -171,15 +171,18 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Application Settings</h1>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleDiscard}>
-              Discard
-            </Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
+          {/* Only show Save Changes button on Company Info tab */}
+          {activeTab === 'company-info' && (
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={handleDiscard}>
+                Discard
+              </Button>
+              <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
