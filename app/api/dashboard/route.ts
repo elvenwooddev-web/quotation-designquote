@@ -1,57 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 
-// Mock data generator for testing
-function generateMockData(period: string = '30days') {
-  const now = new Date();
-  const mockQuotes = [];
-
-  // Determine date range based on period
-  let daysBack = 30;
-  switch (period) {
-    case '7days': daysBack = 7; break;
-    case '30days': daysBack = 30; break;
-    case '90days': daysBack = 90; break;
-    case '12months': daysBack = 365; break;
-    case 'year': daysBack = 365; break;
-  }
-
-  // Generate 50 mock quotes spread across the time period
-  const statuses = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED'];
-  const clients = [
-    { name: 'Acme Corp', source: 'Organic' },
-    { name: 'Tech Solutions Inc', source: 'Referral' },
-    { name: 'Global Enterprises', source: 'Paid Ads' },
-    { name: 'StartUp Hub', source: 'Other' },
-    { name: 'Enterprise Systems', source: 'Organic' },
-    { name: 'Innovation Labs', source: 'Referral' },
-  ];
-
-  for (let i = 0; i < 50; i++) {
-    const daysAgo = Math.floor(Math.random() * daysBack);
-    const quoteDate = new Date(now);
-    quoteDate.setDate(quoteDate.getDate() - daysAgo);
-
-    const client = clients[Math.floor(Math.random() * clients.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const grandTotal = Math.floor(Math.random() * 50000) + 5000;
-
-    mockQuotes.push({
-      id: `mock-${i}`,
-      title: `Project ${i + 1}`,
-      status,
-      grandTotal,
-      createdat: quoteDate.toISOString(),
-      client: {
-        name: client.name,
-        source: client.source
-      }
-    });
-  }
-
-  return mockQuotes;
-}
-
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -120,8 +69,8 @@ export async function GET(request: NextRequest) {
       createdByName: 'System' // TODO: Add createdby column to quotes table
     }));
 
-    // Use real data if available, otherwise fall back to mock data
-    const dataToUse = (quotes && quotes.length > 0) ? quotes : generateMockData(period);
+    // Use only real data - no mock data fallback
+    const dataToUse = quotes || [];
 
     if (!dataToUse || dataToUse.length === 0) {
       return NextResponse.json({
