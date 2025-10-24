@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { User } from '@/lib/types';
+import { supabase } from '@/lib/db';
 
 interface Role {
   id: string;
@@ -47,7 +48,18 @@ export function EditUserDialog({ open, onOpenChange, user, onUserUpdated }: Edit
   const fetchRoles = async () => {
     setLoadingRoles(true);
     try {
-      const response = await fetch('/api/roles');
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch('/api/roles', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch roles');
       const data = await response.json();
       setRoles(data);

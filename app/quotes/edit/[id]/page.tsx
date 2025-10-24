@@ -39,7 +39,21 @@ export default function EditQuotePage({
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/quotes/${quoteId}`);
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch(`/api/quotes/${quoteId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
 
       if (!response.ok) {

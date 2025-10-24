@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/lib/db';
 
 interface BulkImportProps {
   categories: Array<{ id: string; name: string }>;
@@ -63,12 +64,20 @@ export function BulkImport({ categories, onImportComplete }: BulkImportProps) {
     setSuccess(null);
 
     try {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const text = await file.text();
 
       const response = await fetch('/api/products/bulk-import', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ csvData: text }),
       });

@@ -49,7 +49,21 @@ export default function QuotationsPage() {
   const fetchQuotes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/quotes');
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch('/api/quotes', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -107,8 +121,21 @@ export default function QuotationsPage() {
 
     if (confirm('Are you sure you want to delete this quotation?')) {
       try {
+        // Import supabase dynamically
+        const { supabase } = await import('@/lib/db');
+
+        // Get session token
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          throw new Error('Not authenticated. Please log in again.');
+        }
+
         const response = await fetch(`/api/quotes/${quoteId}`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
         });
 
         if (!response.ok) {

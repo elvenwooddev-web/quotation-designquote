@@ -61,7 +61,22 @@ export function QuotationsTable({ quotes, onDelete }: QuotationsTableProps) {
   const handleDownloadPDF = async (quoteId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const response = await fetch(`/api/quotes/${quoteId}/pdf`);
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        alert('Not authenticated. Please log in again.');
+        return;
+      }
+
+      const response = await fetch(`/api/quotes/${quoteId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to generate PDF');
 
       const blob = await response.blob();

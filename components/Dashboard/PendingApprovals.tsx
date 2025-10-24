@@ -51,10 +51,22 @@ export default function PendingApprovals({
 
     setIsProcessing(true);
     try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        alert('Not authenticated. Please log in again.');
+        return;
+      }
+
       const response = await fetch(`/api/quotes/${selectedQuote}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           action: actionType,

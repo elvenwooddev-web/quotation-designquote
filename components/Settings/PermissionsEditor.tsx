@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Save, Shield } from 'lucide-react';
+import { supabase } from '@/lib/db';
 
 interface Permission {
   id: string;
@@ -49,7 +50,18 @@ export function PermissionsEditor({ roleId, roleName, isProtected, embedded = fa
 
   const fetchPermissions = async () => {
     try {
-      const response = await fetch(`/api/roles/${roleId}/permissions`);
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch(`/api/roles/${roleId}/permissions`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch permissions');
       const data = await response.json();
 
@@ -86,9 +98,19 @@ export function PermissionsEditor({ roleId, roleName, isProtected, embedded = fa
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch(`/api/roles/${roleId}/permissions`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           permissions: Object.values(permissions),
         }),

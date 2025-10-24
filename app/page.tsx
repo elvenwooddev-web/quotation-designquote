@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/select';
 import { Plus, Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { hasPermission } from '@/lib/permissions';
+import { supabase } from '@/lib/db';
 
 interface DashboardData {
   totalRevenue: number;
@@ -67,12 +68,23 @@ export default function Dashboard() {
         setIsRefreshing(true);
       }
 
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const params = new URLSearchParams();
       if (user?.role) params.append('role', user.role);
       if (user?.id) params.append('userId', user.id);
       params.append('period', timePeriod);
 
-      const response = await fetch(`/api/dashboard?${params}`);
+      const response = await fetch(`/api/dashboard?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard data');
       }

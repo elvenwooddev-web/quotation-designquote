@@ -12,6 +12,7 @@ import { Plus } from 'lucide-react';
 import { CompanyInfoForm, CompanyInfo } from '@/components/Settings/CompanyInfoForm';
 import { CompanyLogoUpload } from '@/components/Settings/CompanyLogoUpload';
 import { TermsConditionsEditor } from '@/components/Settings/TermsConditionsEditor';
+import { supabase } from '@/lib/db';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -46,8 +47,19 @@ export default function SettingsPage() {
 
   const loadSettings = async () => {
     try {
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       // Load company info
-      const companyRes = await fetch('/api/settings/company');
+      const companyRes = await fetch('/api/settings/company', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (companyRes.ok) {
         const companyData = await companyRes.json();
         setCompanyInfo({
@@ -61,7 +73,11 @@ export default function SettingsPage() {
       }
 
       // Load terms
-      const termsRes = await fetch('/api/settings/terms');
+      const termsRes = await fetch('/api/settings/terms', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (termsRes.ok) {
         const termsData = await termsRes.json();
         setTerms(termsData.content);
@@ -113,10 +129,20 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       // Save company info
       const companyRes = await fetch('/api/settings/company', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ ...companyInfo, logoUrl }),
       });
 
@@ -125,7 +151,10 @@ export default function SettingsPage() {
       // Save terms
       const termsRes = await fetch('/api/settings/terms', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ content: terms }),
       });
 

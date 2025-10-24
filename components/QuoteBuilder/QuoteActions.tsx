@@ -46,7 +46,22 @@ export function QuoteActions() {
 
   const fetchQuoteStatus = async (id: string) => {
     try {
-      const response = await fetch(`/api/quotes/${id}`);
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error('Not authenticated');
+        return;
+      }
+
+      const response = await fetch(`/api/quotes/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (response.ok) {
         const quote = await response.json();
         setQuoteStatus(quote.status || 'DRAFT');
@@ -77,6 +92,17 @@ export function QuoteActions() {
     setIsSaving(true);
 
     try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        alert('Not authenticated. Please log in again.');
+        return;
+      }
+
       const quoteData = {
         title,
         clientId,
@@ -107,7 +133,10 @@ export function QuoteActions() {
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(quoteData),
       });
 
@@ -151,9 +180,23 @@ export function QuoteActions() {
     setIsRequestingApproval(true);
 
     try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        alert('Not authenticated. Please log in again.');
+        return;
+      }
+
       const response = await fetch(`/api/quotes/${savedQuoteId}/request-approval`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
 
       if (response.ok) {
@@ -198,7 +241,22 @@ export function QuoteActions() {
     setIsExporting(true);
 
     try {
-      const response = await fetch(`/api/quotes/${savedQuoteId}/pdf`);
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        alert('Not authenticated. Please log in again.');
+        return;
+      }
+
+      const response = await fetch(`/api/quotes/${savedQuoteId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
       if (response.ok) {
         const blob = await response.blob();

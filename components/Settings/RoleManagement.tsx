@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Plus, Shield } from 'lucide-react';
 import { RoleDialog } from './RoleDialog';
+import { supabase } from '@/lib/db';
 
 interface Role {
   id: string;
@@ -21,7 +22,18 @@ export function RoleManagement() {
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch('/api/roles');
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch('/api/roles', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch roles');
       const data = await response.json();
       setRoles(data);
@@ -53,8 +65,18 @@ export function RoleManagement() {
     }
 
     try {
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch(`/api/roles/${roleId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
 
       if (!response.ok) {

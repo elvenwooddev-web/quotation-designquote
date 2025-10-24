@@ -91,7 +91,22 @@ export default function QuoteDetailPage({
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/quotes/${quoteId}`);
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      // Include authorization token in request
+      const response = await fetch(`/api/quotes/${quoteId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -110,7 +125,21 @@ export default function QuoteDetailPage({
     if (!quoteId) return;
 
     try {
-      const response = await fetch(`/api/quotes/${quoteId}/pdf`);
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      const response = await fetch(`/api/quotes/${quoteId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to generate PDF');
 
       const blob = await response.blob();
@@ -133,8 +162,21 @@ export default function QuoteDetailPage({
 
     if (confirm('Are you sure you want to delete this quotation?')) {
       try {
+        // Import supabase dynamically
+        const { supabase } = await import('@/lib/db');
+
+        // Get session token
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          throw new Error('Not authenticated. Please log in again.');
+        }
+
         const response = await fetch(`/api/quotes/${quoteId}`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
         });
 
         if (!response.ok) {
@@ -154,8 +196,21 @@ export default function QuoteDetailPage({
 
     setApproving(true);
     try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch(`/api/quotes/${quoteId}/approve`, {
         method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
 
       if (!response.ok) {
@@ -184,9 +239,22 @@ export default function QuoteDetailPage({
 
     if (confirm('Send this quote to the client?')) {
       try {
+        // Import supabase dynamically
+        const { supabase } = await import('@/lib/db');
+
+        // Get session token
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          throw new Error('Not authenticated. Please log in again.');
+        }
+
         const response = await fetch(`/api/quotes/${quoteId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({ status: 'SENT' }),
         });
 

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PermissionsEditor } from './PermissionsEditor';
+import { supabase } from '@/lib/db';
 
 interface Role {
   id: string;
@@ -51,12 +52,22 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     setLoading(true);
 
     try {
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const url = role ? `/api/roles/${role.id}` : '/api/roles';
       const method = role ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(formData),
       });
 

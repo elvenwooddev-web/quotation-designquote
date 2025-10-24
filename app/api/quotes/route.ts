@@ -1,9 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
+import { createClient } from '@supabase/supabase-js';
 import { generateQuoteNumber, calculateQuoteTotals, calculateLineTotal } from '@/lib/calculations';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Extract token from Authorization header
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Authorization token required' },
+        { status: 401 }
+      );
+    }
+
+    // Create authenticated Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
+
     const { data: quotes, error } = await supabase
       .from('quotes')
       .select(`
@@ -74,6 +98,19 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Create authenticated Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
 
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
 
