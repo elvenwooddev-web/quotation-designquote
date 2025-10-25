@@ -192,6 +192,7 @@ PROD-004,Door Handle Set,Stainless steel handle,set,25.50,Hardware`;
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Code</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">UOM</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rate</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
@@ -202,6 +203,9 @@ PROD-004,Door Handle Set,Stainless steel handle,set,25.50,Hardware`;
                   <tr key={index}>
                     <td className="px-4 py-2 text-sm text-gray-900">{row['Item Code'] || '-'}</td>
                     <td className="px-4 py-2 text-sm text-gray-900">{row['Item Name']}</td>
+                    <td className="px-4 py-2 text-sm text-gray-500 max-w-xs truncate" title={row['Description']}>
+                      {row['Description'] || '-'}
+                    </td>
                     <td className="px-4 py-2 text-sm text-gray-900">{row['UOM']}</td>
                     <td className="px-4 py-2 text-sm text-gray-900">{row['Rate']}</td>
                     <td className="px-4 py-2 text-sm text-gray-900">{row['Category']}</td>
