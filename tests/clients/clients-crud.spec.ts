@@ -625,3 +625,266 @@ test.describe('Client Source Options', () => {
     expect(await sourceSelect.inputValue()).toBe('Other');
   });
 });
+
+test.describe('Client Bulk Import', () => {
+  test.beforeEach(async ({ adminPage }) => {
+    await adminPage.goto('/clients');
+    await adminPage.waitForLoadState('networkidle');
+  });
+
+  test('should display bulk import button', async ({ adminPage }) => {
+    // Verify Bulk Import button is visible
+    await expect(adminPage.locator('[data-testid="bulk-import-button"]')).toBeVisible();
+  });
+
+  test('should open bulk import dialog', async ({ adminPage }) => {
+    // Click Bulk Import button
+    await adminPage.click('[data-testid="bulk-import-button"]');
+
+    // Wait for dialog to open
+    await expect(adminPage.locator('text=Bulk Import Clients')).toBeVisible();
+
+    // Verify import instructions are displayed
+    await expect(adminPage.locator('text=Import Instructions')).toBeVisible();
+    await expect(adminPage.locator('text=Required column: Name')).toBeVisible();
+    await expect(adminPage.locator('text=Optional columns: Email, Phone, Source, Address')).toBeVisible();
+  });
+
+  test('should download sample CSV', async ({ adminPage }) => {
+    // Click Bulk Import button
+    await adminPage.click('[data-testid="bulk-import-button"]');
+
+    // Wait for dialog to open
+    await expect(adminPage.locator('text=Bulk Import Clients')).toBeVisible();
+
+    // Setup download promise before clicking download button
+    const downloadPromise = adminPage.waitForEvent('download');
+
+    // Click download sample button
+    await adminPage.click('[data-testid="download-sample-csv"]');
+
+    // Wait for download
+    const download = await downloadPromise;
+
+    // Verify download filename
+    expect(download.suggestedFilename()).toBe('sample-clients-import.csv');
+  });
+
+  test('should upload CSV and show preview', async ({ adminPage, page }) => {
+    // Click Bulk Import button
+    await adminPage.click('[data-testid="bulk-import-button"]');
+
+    // Wait for dialog to open
+    await expect(adminPage.locator('text=Bulk Import Clients')).toBeVisible();
+
+    // Create a test CSV content
+    const csvContent = `Name,Email,Phone,Source,Address
+Test Client 1,test1@example.com,+1-555-0001,Referral,"100 Main St, City, State"
+Test Client 2,test2@example.com,+1-555-0002,Organic,"200 Oak Ave, Town, State"
+Test Client 3,test3@example.com,+1-555-0003,Other,"300 Pine Rd, Village, State"`;
+
+    // Create a file with the CSV content
+    const buffer = Buffer.from(csvContent, 'utf-8');
+
+    // Upload the CSV file
+    const fileInput = adminPage.locator('[data-testid="csv-file-input"]');
+    await fileInput.setInputFiles({
+      name: 'test-clients.csv',
+      mimeType: 'text/csv',
+      buffer: buffer,
+    });
+
+    // Wait for preview to render
+    await adminPage.waitForTimeout(1000);
+
+    // Verify preview table is shown
+    await expect(adminPage.locator('[data-testid="preview-table"]')).toBeVisible();
+
+    // Verify preview shows correct data
+    await expect(adminPage.locator('text=Test Client 1')).toBeVisible();
+    await expect(adminPage.locator('text=test1@example.com')).toBeVisible();
+    await expect(adminPage.locator('text=Referral')).toBeVisible();
+
+    // Verify import button appears
+    await expect(adminPage.locator('[data-testid="import-button"]')).toBeVisible();
+  });
+
+  test('should import clients from CSV successfully', async ({ adminPage }) => {
+    // Click Bulk Import button
+    await adminPage.click('[data-testid="bulk-import-button"]');
+
+    // Wait for dialog to open
+    await expect(adminPage.locator('text=Bulk Import Clients')).toBeVisible();
+
+    // Create a test CSV with unique clients
+    const timestamp = Date.now();
+    const csvContent = `Name,Email,Phone,Source,Address
+Bulk Import Test ${timestamp},bulktest${timestamp}@example.com,+1-555-${timestamp},Referral,"123 Test St, Test City"
+Bulk Import User ${timestamp},bulkuser${timestamp}@example.com,+1-555-${timestamp + 1},Organic,"456 User Ave, User Town"`;
+
+    const buffer = Buffer.from(csvContent, 'utf-8');
+
+    // Upload the CSV file
+    const fileInput = adminPage.locator('[data-testid="csv-file-input"]');
+    await fileInput.setInputFiles({
+      name: 'bulk-import-test.csv',
+      mimeType: 'text/csv',
+      buffer: buffer,
+    });
+
+    // Wait for preview
+    await adminPage.waitForTimeout(1000);
+
+    // Click Import button
+    await adminPage.click('[data-testid="import-button"]');
+
+    // Wait for import to complete
+    await expect(adminPage.locator('[data-testid="success-message"]')).toBeVisible({ timeout: 10000 });
+
+    // Verify success message
+    await expect(adminPage.locator('text=Successfully imported 2 clients')).toBeVisible();
+
+    // Close dialog
+    const dialog = adminPage.locator('text=Bulk Import Clients').locator('..');
+    await adminPage.keyboard.press('Escape');
+    await adminPage.waitForTimeout(500);
+
+    // Verify clients appear in the table
+    await adminPage.waitForTimeout(1000);
+    await expect(adminPage.locator(`text=Bulk Import Test ${timestamp}`)).toBeVisible({ timeout: 5000 });
+  });
+
+  test('should handle CSV with missing required fields', async ({ adminPage }) => {
+    // Click Bulk Import button
+    await adminPage.click('[data-testid="bulk-import-button"]');
+
+    // Wait for dialog to open
+    await expect(adminPage.locator('text=Bulk Import Clients')).toBeVisible();
+
+    // Create CSV with missing Name field
+    const csvContent = `Name,Email,Phone,Source,Address
+,missingname@example.com,+1-555-0001,Other,"100 Main St"
+Valid Client,valid@example.com,+1-555-0002,Referral,"200 Oak Ave"`;
+
+    const buffer = Buffer.from(csvContent, 'utf-8');
+
+    // Upload the CSV file
+    const fileInput = adminPage.locator('[data-testid="csv-file-input"]');
+    await fileInput.setInputFiles({
+      name: 'invalid-clients.csv',
+      mimeType: 'text/csv',
+      buffer: buffer,
+    });
+
+    // Wait for preview
+    await adminPage.waitForTimeout(1000);
+
+    // Click Import button
+    await adminPage.click('[data-testid="import-button"]');
+
+    // Wait for import to complete
+    await adminPage.waitForTimeout(3000);
+
+    // Verify success message shows errors
+    await expect(adminPage.locator('[data-testid="success-message"]')).toBeVisible();
+    await expect(adminPage.locator('text=Skipped 1 rows due to errors')).toBeVisible();
+    await expect(adminPage.locator('text=Successfully imported 1 clients')).toBeVisible();
+  });
+
+  test('should handle CSV with invalid email format', async ({ adminPage }) => {
+    // Click Bulk Import button
+    await adminPage.click('[data-testid="bulk-import-button"]');
+
+    // Wait for dialog to open
+    await expect(adminPage.locator('text=Bulk Import Clients')).toBeVisible();
+
+    // Create CSV with invalid email
+    const csvContent = `Name,Email,Phone,Source,Address
+Invalid Email Client,not-an-email,+1-555-0001,Other,"100 Main St"
+Valid Email Client,valid@example.com,+1-555-0002,Referral,"200 Oak Ave"`;
+
+    const buffer = Buffer.from(csvContent, 'utf-8');
+
+    // Upload the CSV file
+    const fileInput = adminPage.locator('[data-testid="csv-file-input"]');
+    await fileInput.setInputFiles({
+      name: 'invalid-email.csv',
+      mimeType: 'text/csv',
+      buffer: buffer,
+    });
+
+    // Wait for preview
+    await adminPage.waitForTimeout(1000);
+
+    // Click Import button
+    await adminPage.click('[data-testid="import-button"]');
+
+    // Wait for import to complete
+    await adminPage.waitForTimeout(3000);
+
+    // Verify partial success with errors
+    await expect(adminPage.locator('[data-testid="success-message"]')).toBeVisible();
+    await expect(adminPage.locator('text=Skipped 1 rows due to errors')).toBeVisible();
+  });
+
+  test('should handle CSV with addresses containing commas', async ({ adminPage }) => {
+    // Click Bulk Import button
+    await adminPage.click('[data-testid="bulk-import-button"]');
+
+    // Wait for dialog to open
+    await expect(adminPage.locator('text=Bulk Import Clients')).toBeVisible();
+
+    const timestamp = Date.now();
+    // Create CSV with complex addresses
+    const csvContent = `Name,Email,Phone,Source,Address
+Comma Test ${timestamp},commatest${timestamp}@example.com,+1-555-0001,Referral,"123 Main St, Suite 100, New York, NY 10001"`;
+
+    const buffer = Buffer.from(csvContent, 'utf-8');
+
+    // Upload the CSV file
+    const fileInput = adminPage.locator('[data-testid="csv-file-input"]');
+    await fileInput.setInputFiles({
+      name: 'comma-address.csv',
+      mimeType: 'text/csv',
+      buffer: buffer,
+    });
+
+    // Wait for preview
+    await adminPage.waitForTimeout(1000);
+
+    // Verify preview shows full address correctly
+    await expect(adminPage.locator('text=123 Main St, Suite 100, New York, NY 10001')).toBeVisible();
+
+    // Click Import button
+    await adminPage.click('[data-testid="import-button"]');
+
+    // Wait for import to complete
+    await expect(adminPage.locator('[data-testid="success-message"]')).toBeVisible({ timeout: 10000 });
+
+    // Verify success
+    await expect(adminPage.locator('text=Successfully imported 1 clients')).toBeVisible();
+  });
+
+  test('should validate file type (CSV only)', async ({ adminPage }) => {
+    // Click Bulk Import button
+    await adminPage.click('[data-testid="bulk-import-button"]');
+
+    // Wait for dialog to open
+    await expect(adminPage.locator('text=Bulk Import Clients')).toBeVisible();
+
+    // Try to upload a non-CSV file
+    const fileInput = adminPage.locator('[data-testid="csv-file-input"]');
+    await fileInput.setInputFiles({
+      name: 'test.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('Not a CSV file'),
+    });
+
+    // Wait a moment
+    await adminPage.waitForTimeout(500);
+
+    // Verify error message appears
+    await expect(adminPage.locator('[data-testid="error-message"]')).toBeVisible();
+    await expect(adminPage.locator('text=Please select a CSV file')).toBeVisible();
+  });
+});

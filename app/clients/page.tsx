@@ -7,9 +7,11 @@ import { Client } from '@/lib/types';
 import { ClientsTable } from '@/components/Clients/ClientsTable';
 import { ClientSidebar } from '@/components/Clients/ClientSidebar';
 import { ClientDialog } from '@/components/Clients/ClientDialog';
+import { BulkImport } from '@/components/Clients/BulkImport';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Search, Upload } from 'lucide-react';
 import { supabase } from '@/lib/db';
 
 export default function ClientsPage() {
@@ -17,6 +19,7 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
+  const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -192,10 +195,16 @@ export default function ClientsPage() {
                 <p className="text-gray-600 mt-1">Manage your client relationships</p>
               </div>
               {canCreate && (
-                <Button onClick={() => setShowClientDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Client
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowBulkImportDialog(true)} data-testid="bulk-import-button">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Bulk Import
+                  </Button>
+                  <Button onClick={() => setShowClientDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Client
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -249,6 +258,21 @@ export default function ClientsPage() {
         client={editingClient}
         onSave={handleSaveClient}
       />
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={showBulkImportDialog} onOpenChange={setShowBulkImportDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bulk Import Clients</DialogTitle>
+          </DialogHeader>
+          <BulkImport
+            onImportComplete={() => {
+              fetchClients();
+              setShowBulkImportDialog(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
