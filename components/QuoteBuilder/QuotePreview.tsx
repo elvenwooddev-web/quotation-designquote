@@ -36,8 +36,23 @@ export function QuotePreview() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        // Import supabase dynamically
+        const { supabase } = await import('@/lib/db');
+
+        // Get session token
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          console.error('Not authenticated');
+          return;
+        }
+
         // Fetch terms
-        const termsResponse = await fetch('/api/settings/terms');
+        const termsResponse = await fetch('/api/settings/terms', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
         if (termsResponse.ok) {
           const termsData = await termsResponse.json();
           // Strip HTML tags and convert to plain text
@@ -49,7 +64,11 @@ export function QuotePreview() {
         }
 
         // Fetch company info
-        const companyResponse = await fetch('/api/settings/company');
+        const companyResponse = await fetch('/api/settings/company', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
         if (companyResponse.ok) {
           const companyData = await companyResponse.json();
           setCompanyInfo({

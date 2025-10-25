@@ -23,7 +23,22 @@ export function QuoteDetails() {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch('/api/clients');
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/db');
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error('Not authenticated');
+        return;
+      }
+
+      const response = await fetch('/api/clients', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       const data = await response.json();
       setClients(data);
     } catch (error) {
