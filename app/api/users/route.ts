@@ -187,6 +187,14 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // IMPORTANT: Use supabaseAdmin to bypass RLS for admin user management
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Server configuration error: Admin client not available' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { id, roleId, isActive } = body;
 
@@ -204,7 +212,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate roleId if provided
     if (roleId !== undefined) {
-      const { data: roleData, error: roleError } = await supabase
+      const { data: roleData, error: roleError } = await supabaseAdmin
         .from('roles')
         .select('id')
         .eq('id', roleId)
@@ -223,7 +231,8 @@ export async function PUT(request: NextRequest) {
       updateData.isactive = isActive;
     }
 
-    const { data: user, error } = await supabase
+    // IMPORTANT: Use supabaseAdmin to bypass RLS policies
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', id)
