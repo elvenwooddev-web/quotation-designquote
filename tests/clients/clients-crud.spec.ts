@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '../fixtures/auth-helpers';
-import { generateClientData, waitForApiResponse } from '../fixtures/test-data';
+import { generateClientData } from '../fixtures/test-data';
 
 test.describe('Clients - CRUD Operations', () => {
   test.beforeEach(async ({ adminPage }) => {
@@ -179,10 +179,6 @@ test.describe('Clients - CRUD Operations', () => {
     const count = await editButtons.count();
 
     if (count > 0) {
-      // Get original client name
-      const clientRow = adminPage.locator('tbody tr').first();
-      const originalName = await clientRow.locator('td:first-child .text-sm.font-medium').textContent();
-
       // Click edit button
       await editButtons.first().click();
 
@@ -426,7 +422,6 @@ test.describe('Client Detail Sidebar', () => {
       // Get client info from table
       const firstRow = clientRows.first();
       const clientName = await firstRow.locator('td:first-child .text-sm.font-medium').textContent();
-      const clientEmail = await firstRow.locator('td:nth-child(2) .text-sm').textContent();
 
       // Click on client row
       await firstRow.click();
@@ -670,7 +665,7 @@ test.describe('Client Bulk Import', () => {
     expect(download.suggestedFilename()).toBe('sample-clients-import.csv');
   });
 
-  test('should upload CSV and show preview', async ({ adminPage, page }) => {
+  test('should upload CSV and show preview', async ({ adminPage }) => {
     // Click Bulk Import button
     await adminPage.click('[data-testid="bulk-import-button"]');
 
@@ -745,7 +740,6 @@ Bulk Import User ${timestamp},bulkuser${timestamp}@example.com,+1-555-${timestam
     await expect(adminPage.locator('text=Successfully imported 2 clients')).toBeVisible();
 
     // Close dialog
-    const dialog = adminPage.locator('text=Bulk Import Clients').locator('..');
     await adminPage.keyboard.press('Escape');
     await adminPage.waitForTimeout(500);
 
